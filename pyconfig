@@ -1,0 +1,7 @@
+#!/bin/bash -l
+#ml SciPy-bundle/2020.11-fosscuda-2020b
+ml torchsparse
+
+# nict installed over pip with from EMSANet github
+
+python "$@"
