@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 from sklearn.neighbors import NearestNeighbors
 def transfer_voxel_visibility(accum_freespace : np.ndarray, global_pts, cell_size):
     '''
@@ -194,17 +195,151 @@ def raycast_NN(pts, KNN, fill_pts=10):
 
 
 
+
+
+def smooth_loss(est_flow, NN_idx, loss_norm=1, mask=None):
+    # todo add mask
+    bs, n, c = est_flow.shape
+    K = NN_idx.shape[1]
+
+    est_flow_neigh = est_flow.view(bs * n, c)
+    est_flow_neigh = est_flow_neigh[NN_idx.view(bs * n, K)]
+    # est_flow_neigh = est_flow_neigh[:, 1:K+1, :]
+    flow_diff = est_flow.view(bs * n, c) - est_flow_neigh.permute(1,0,2)
+
+    flow_diff = (flow_diff).norm(p=loss_norm, dim=2)
+    smooth_flow_loss = flow_diff.mean()
+    smooth_flow_per_point = flow_diff.mean(dim=0).view(bs, n)
+
+    return smooth_flow_loss, smooth_flow_per_point
+
+def margin_visibility_freespace(curr_pts, pose, cfg, margin=0.1):
+    '''
+    Local point cloud and lidar position with respect to the point local frame. Then it is consistent.
+    :param curr_pts: point cloud for raycasting
+    :param pose: pose of lidar from where the beams are raycasted
+    :param cfg: config file with cell sizes etc.
+    :return: point cloud of safely visible areas based on lidar rays
+    '''
+    assert len(curr_pts.shape) == 2
+
+    cell_size = cfg['cell_size']
+    size_of_block = cfg['size_of_block']
+    # Sort the point from closest to farthest
+    distance = np.sqrt(curr_pts[..., 0] ** 2 + curr_pts[..., 1] ** 2 + curr_pts[..., 2] ** 2)
+    index_by_distance = distance.argsort()
+    curr_pts = curr_pts[index_by_distance]
+
+    # Get the boundaries of the raycasted point cloud
+    x_min, x_max, y_min, y_max, z_min, z_max = cfg['x_min'], cfg['x_max'], cfg['y_min'], cfg['y_max'], cfg['z_min'], cfg['z_max']
+
+    x_min -= 2
+    y_min -= 2
+    z_min -= 1
+
+    x_max += 2
+    y_max += 2
+    z_max += 1
+
+    # Create voxel grid
+    xyz_shape = np.array(
+            (np.round((x_max - x_min) / cell_size[0]) + 3,
+             np.round((y_max - y_min) / cell_size[1]) + 3,
+             np.round((z_max - z_min) / cell_size[2]) + 3),
+            dtype=int)
+
+    # 0 is no stat, -1 is block, 1 is free, 2 is point
+    cur_xyz_voxel = np.zeros(xyz_shape)
+    accum_xyz_voxel = np.zeros(xyz_shape)
+
+    curr_xyz_points = np.array(np.round(((curr_pts[:, :3] - np.array((x_min, y_min, z_min))) / cell_size)), dtype=int)
+    cur_xyz_voxel[curr_xyz_points[:, 0], curr_xyz_points[:, 1], curr_xyz_points[:, 2]] = 2
+
+    KNN_to_pc = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(curr_pts)
+    # Iterate one-by-one and update the voxel grid with visibility and blockage for next rays
+    for p in curr_pts:
+        # Calculate number of intermediate points based on the cell size of voxel grid
+        nbr_inter = int(cfg['x_max'] / cell_size[0])
+        # Raycast the beam from pose to the point
+        # if pose[2] > p[2] + margin:
+        #     ray = np.array((np.linspace(pose[0], p[0], nbr_inter),
+        #                    np.linspace(pose[1], p[1], nbr_inter),
+        #                       np.linspace(pose[2], p[2], nbr_inter))).T
+        #
+        # elif pose[2] < p[2] - margin:   # still not finished, also not for backward radius
+        #     ray = np.array((np.linspace(pose[0], p[0] + margin, nbr_inter),
+        #                 np.linspace(pose[1], p[1] + margin, nbr_inter),
+        #                 np.linspace(pose[2], p[2] + margin, nbr_inter))).T
+
+        # else:
+        ray = np.array((np.linspace(pose[0], p[0], nbr_inter),
+                        np.linspace(pose[1], p[1], nbr_inter),
+                        np.linspace(pose[2], p[2], nbr_inter))).T
+
+        # ray = ray[(np.abs(ray - p) > margin).any(1)]  # remove points that are too close to the point axis-wise (per coordinate)
+        ray = ray[(np.abs(ray - p) > margin).all(1)]  # remove points that are too close to the point
+
+        # if ray.shape[0] < 1:
+        #     continue
+        #
+        # dist, nn = KNN_to_pc.kneighbors(ray, return_distance=True)
+        #
+        # if np.max(dist) < margin:
+        #     continue
+
+        # Transform the ray to voxel grid coordinates
+
+        xyz_points = np.array(np.round(((ray[:, :3] - np.array((x_min, y_min, z_min))) / cell_size)), dtype=int)
+        # xyz_points = xyz_points[((xyz_points != xyz_points[-1]).all(1)) & ((xyz_points != xyz_points[0]).all(1))] # leave last and first cell
+        # xyz_points = xyz_points[(xyz_points[:,2] != xyz_points[-1,2] - 1) &
+        #                         (xyz_points[:,2] != xyz_points[-1,2]) &
+        #                         (xyz_points[:,2] != xyz_points[-1,2] + 1)]
+
+        # find the intersection of ray and current status of voxels
+        ray_stats = cur_xyz_voxel[xyz_points[:, 0], xyz_points[:, 1], xyz_points[:, 2]]
+
+        if len(xyz_points) == 0: continue  # if the ray is eliminated by security checks
+
+        # Take last point of the ray and create blockage around it for other rays (to create occlusion)
+        last_ray_pts = xyz_points[-1]
+        cur_xyz_voxel[last_ray_pts[0] - (size_of_block + 1): last_ray_pts[0] + size_of_block,
+        last_ray_pts[1] - (size_of_block + 1): last_ray_pts[1] + size_of_block,
+        last_ray_pts[2] - (size_of_block + 1): last_ray_pts[2] + size_of_block] = - 1
+
+        # Take only the part of ray before the blockage
+        if (ray_stats == -1).any():
+            # find the first intersection index
+            first_intersection = (np.where(ray_stats == -1)[0][0])
+            xyz_points = xyz_points[:first_intersection]
+
+        # Update voxel grid with the visibility of the ray
+        cur_xyz_voxel[xyz_points[:, 0], xyz_points[:, 1], xyz_points[:, 2]] = 1
+        accum_xyz_voxel[xyz_points[:, 0], xyz_points[:, 1], xyz_points[:, 2]] += 1
+
+    # point_coords = np.argwhere(cur_xyz_voxel == 2)
+    ray_coords = np.argwhere(cur_xyz_voxel == 1)
+    # blocks_coords = np.argwhere(cur_xyz_voxel == -1)
+
+    accum_freespace_feature = accum_xyz_voxel[ray_coords[:,0], ray_coords[:,1], ray_coords[:,2]]
+
+    # restore the original coordinates in meters and add x,y,z, freespace feature
+    accum_freespace_meters = ray_coords[:, :3] * cell_size + np.array((x_min, y_min, z_min))
+    accum_freespace_meters = np.insert(accum_freespace_meters, 3, accum_freespace_feature, axis=1)
+
+    return accum_freespace_meters
+
 def mask_KNN_by_visibility(pts, K, cfg, margin=0.15):
 
     KNN_pts = NearestNeighbors(n_neighbors=K, algorithm='kd_tree').fit(pts).kneighbors(pts[:, :3], return_distance=True)
 
 
-    free_pts = visibility_freespace(pts, pose=(0, 0, 0), cfg=cfg)
+    free_pts = margin_visibility_freespace(pts, pose=(0, 0, 0), cfg=cfg, margin=margin)
 
     close_freespace = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(pts).kneighbors(free_pts[:, :3],
                                                                                                return_distance=True)
     dist_to_freespace = close_freespace[0][:, 0]
     filtered_free_pts = free_pts[dist_to_freespace >= margin]
+
 
     ray_array, all_indices = raycast_NN(pts, KNN_pts[1], fill_pts=10)
 
@@ -218,21 +353,48 @@ def mask_KNN_by_visibility(pts, K, cfg, margin=0.15):
 
     return masked_KNN
 
-def smooth_loss(est_flow, NN_idx, loss_norm=1, mask=None):
-    # todo add mask
-    bs, n, c = est_flow.shape
+if __name__ == "__main__":
+    frame = 162
+    data = np.load(f'/home/patrik/rci/experiments/scoop_vis_smooth/pc_res/{frame:06d}_res.npz', allow_pickle=True)
+    pc1 = data['pc1'][:, [0, 2, 1]]
+    gt_flow1 = data['gt_flow_for_pc1'][:, [0, 2, 1]]
 
-    est_flow_neigh = est_flow.view(bs * n, c)
-    est_flow_neigh = est_flow_neigh[NN_idx.view(bs * n, K)]
-    # est_flow_neigh = est_flow_neigh[:, 1:K+1, :]
-    flow_diff = est_flow.view(bs * n, c) - est_flow_neigh.permute(1,0,2)
+    cfg = {"x_min": -50,
+           "x_max": 50,
+           "y_min": -50,
+           "y_max": 50,
+           "z_min": -5,
+           "z_max": 5,
+           "cell_size": (0.05, 0.05, 0.05),
+           "size_of_block": 1,
+           }
 
-    flow_diff = (flow_diff).norm(p=loss_norm, dim=2)
-    smooth_flow_loss = flow_diff.mean()
-    smooth_flow_per_point = flow_diff.mean(dim=0).view(bs, n)
+    margin = 0.01
+    # freespace = margin_visibility_freespace(pc1, (0,0,0), cfg, margin=margin)
+    # knn = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(pc1).kneighbors(freespace[:, :3], return_distance=True)
+    # res_freespace = freespace[knn[0][:, 0] > margin, :3]
+    from vis.deprecated_vis import visualize_multiple_pcls, visualize_points3D
 
-    return smooth_flow_loss, smooth_flow_per_point
+    # visualize_multiple_pcls(*[pc1, freespace, res_freespace])
+    # visualize_multiple_pcls(*[res_freespace, pc1])
 
+    masked_KNN = mask_KNN_by_visibility(pc1, K=32, cfg=cfg, margin=margin)
+
+    r, ind = raycast_NN(pc1, masked_KNN, fill_pts=10)
+
+    visualize_points3D(r, ind[:,1])
+
+    import torch
+    gt_flow = torch.from_numpy(gt_flow1).unsqueeze(0)
+
+
+    smooth_knn = NearestNeighbors(n_neighbors=32, algorithm='kd_tree').fit(pc1).kneighbors(pc1, return_distance=True)[1]
+
+    smooth_knn = torch.from_numpy(smooth_knn)
+    masked_KNN = torch.from_numpy(masked_KNN)
+
+    smooth_loss(gt_flow, NN_idx=smooth_knn)
+    smooth_loss(gt_flow, NN_idx=masked_KNN)
 
 # Save the outputs - debug more
 
