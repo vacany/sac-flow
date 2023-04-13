@@ -1,0 +1,14 @@
+adaptive_threshold:
+  fixed_threshold: null
+  initial_threshold: 2.0
+  min_motion_th: 0.1
+data:
+  correct_scan: true
+  deskew: false
+  max_range: 35.0
+  min_range: 0.5
+  preprocess: true
+mapping:
+  max_points_per_voxel: 20
+  voxel_size: 0.35
+out_dir: tmp_icp_results

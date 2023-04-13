@@ -45,20 +45,67 @@
     "ASKED_ADD_EXTERNAL_FILES": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
-    "last_opened_file_path": "/home/patrik/pcflow/models/SCOOP/scripts",
+    "last_opened_file_path": "/home/patrik/pcflow/models/kiss_icp",
     "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/models/kiss_icp" />
       <recent name="$PROJECT_DIR$/models/SCOOP/scripts" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/models/kiss_icp" />
+      <recent name="$PROJECT_DIR$/dev" />
       <recent name="$PROJECT_DIR$/vis" />
       <recent name="$PROJECT_DIR$/ops" />
     </key>
   </component>
   <component name="RunManager" selected="Python.visibility">
+    <configuration name="glumpy_ex" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="pcflow" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/vis" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/vis/glumpy_ex.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="kissicp" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="pcflow" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/models/kiss_icp" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/models/kiss_icp/kissicp.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="show_visibility_loss" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pcflow" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -128,6 +175,8 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.visibility" />
+        <item itemvalue="Python.kissicp" />
+        <item itemvalue="Python.glumpy_ex" />
         <item itemvalue="Python.show_visibility_loss" />
         <item itemvalue="Python.vispy_ex" />
       </list>
@@ -146,12 +195,19 @@
       <workItem from="1680675734426" duration="14160000" />
       <workItem from="1680699449200" duration="8517000" />
       <workItem from="1680766868151" duration="21459000" />
+      <workItem from="1680795861898" duration="502000" />
+      <workItem from="1681216400168" duration="1356000" />
+      <workItem from="1681285107172" duration="13693000" />
+      <workItem from="1681317964588" duration="7552000" />
+      <workItem from="1681370428247" duration="21331000" />
     </task>
     <servers />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/pcflow$glumpy_ex.coverage" NAME="glumpy_ex Coverage Results" MODIFIED="1681325418016" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/vis" />
     <SUITE FILE_PATH="coverage/pcflow$vispy_ex.coverage" NAME="vispy_ex Coverage Results" MODIFIED="1680615208649" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/dev" />
     <SUITE FILE_PATH="coverage/pcflow$show_visibility_loss.coverage" NAME="show_visibility_loss Coverage Results" MODIFIED="1680680604417" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/scripts" />
-    <SUITE FILE_PATH="coverage/pcflow$visibility.coverage" NAME="visibility Coverage Results" MODIFIED="1680788586459" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/ops" />
+    <SUITE FILE_PATH="coverage/pcflow$kissicp.coverage" NAME="kissicp Coverage Results" MODIFIED="1681396629817" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/models/kiss_icp" />
+    <SUITE FILE_PATH="coverage/pcflow$visibility.coverage" NAME="visibility Coverage Results" MODIFIED="1681396670765" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/ops" />
   </component>
 </project>

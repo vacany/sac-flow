@@ -1,6 +1,6 @@
-<mxfile host="Electron" modified="2023-04-04T09:33:53.422Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.1.2 Chrome/106.0.5249.199 Electron/21.4.3 Safari/537.36" etag="V1z0HIbf8Mn2O0CmpSKO" version="21.1.2" type="device">
+<mxfile host="Electron" modified="2023-04-06T10:11:57.300Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.1.2 Chrome/106.0.5249.199 Electron/21.4.3 Safari/537.36" etag="gIjLlgwMGm30QJpRWq1n" version="21.1.2" type="device">
   <diagram name="Page-1" id="DpgzWi51kZh1wFnS16hX">
-    <mxGraphModel dx="2458" dy="1002" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="3117" dy="1332" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -100,6 +100,9 @@
         <mxCell id="9ZsxYOg9hQhBu1GxgSwE-27" value="Logic / Exclusivity" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;" parent="1" vertex="1">
           <mxGeometry x="-80" y="520" width="330" height="30" as="geometry" />
         </mxCell>
+        <mxCell id="uUpfiSnN3jfPOjwqITpE-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="9ZsxYOg9hQhBu1GxgSwE-28" target="uUpfiSnN3jfPOjwqITpE-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
         <mxCell id="9ZsxYOg9hQhBu1GxgSwE-28" value="Flow training" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="730" y="1000" width="120" height="60" as="geometry" />
         </mxCell>
@@ -155,7 +158,7 @@
           <mxGeometry x="1170" y="610" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="9ZsxYOg9hQhBu1GxgSwE-43" value="Segmentation pipeline" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="730" y="1080" width="120" height="60" as="geometry" />
+          <mxGeometry x="720" y="800" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="9ZsxYOg9hQhBu1GxgSwE-44" value="Layers Exclusive / Complexity" style="text;whiteSpace=wrap;html=1;fontSize=18;direction=west;flipH=0;flipV=1;rotation=-90;" parent="1" vertex="1">
           <mxGeometry x="-195" y="575" width="270" height="40" as="geometry" />
@@ -192,6 +195,12 @@
         </mxCell>
         <mxCell id="9ZsxYOg9hQhBu1GxgSwE-42" value="Chamf.py" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="200" y="710" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uUpfiSnN3jfPOjwqITpE-1" value="SCOOp exp" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="70" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="uUpfiSnN3jfPOjwqITpE-2" value="Model weights" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="1000" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

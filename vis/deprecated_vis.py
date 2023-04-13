@@ -130,7 +130,7 @@ if socket.gethostname().startswith("Pat"):
         visualize_multiple_pcls(*[p_i, vis_p_i, p_j])
 
 else:
-    def visualize_points3D(pts, color=None, path=os.path.expanduser("~") + '/data/tmp_vis/visul'):
+    def visualize_points3D(pts, color=None, path=os.path.expanduser("~") + '/data/tmp_vis/cur.npz'):
         np.save(path, pts)
 
         if color is None:
@@ -138,7 +138,12 @@ else:
         else:
             np.save(path + '_color.npy', color)
 
+    def visualize_flow3d(pts1, pts2, frame_flow):
+        pass
 
+    def visualize_plane_with_points(points, n_vector, d):
+        pass
+    def visualize_multiple_pcls(*args, **kwargs):
         pass
 
 # matplotlib

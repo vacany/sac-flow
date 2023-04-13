@@ -1,6 +1,9 @@
 import numpy as np
-from tqdm import tqdm
 from sklearn.neighbors import NearestNeighbors
+
+from ops.rays import create_connecting_pts, raycast_pts, eliminate_rays_by_margin_distance
+
+
 def transfer_voxel_visibility(accum_freespace : np.ndarray, global_pts, cell_size):
     '''
 
@@ -182,8 +185,6 @@ def raycast_NN(pts, KNN, fill_pts=10):
 
     indices = np.stack((indices_N, indices_K)).T
 
-    fill_pts = 10
-
     for i in range(fill_pts):
         ray = rolled_pts + (rolled_NN_pts - rolled_pts) * (i / fill_pts)
         all_rays.append(ray)
@@ -255,7 +256,7 @@ def margin_visibility_freespace(curr_pts, pose, cfg, margin=0.1):
     curr_xyz_points = np.array(np.round(((curr_pts[:, :3] - np.array((x_min, y_min, z_min))) / cell_size)), dtype=int)
     cur_xyz_voxel[curr_xyz_points[:, 0], curr_xyz_points[:, 1], curr_xyz_points[:, 2]] = 2
 
-    KNN_to_pc = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(curr_pts)
+    # KNN_to_pc = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(curr_pts)
     # Iterate one-by-one and update the voxel grid with visibility and blockage for next rays
     for p in curr_pts:
         # Calculate number of intermediate points based on the cell size of voxel grid
@@ -298,19 +299,20 @@ def margin_visibility_freespace(curr_pts, pose, cfg, margin=0.1):
         # find the intersection of ray and current status of voxels
         ray_stats = cur_xyz_voxel[xyz_points[:, 0], xyz_points[:, 1], xyz_points[:, 2]]
 
-        if len(xyz_points) == 0: continue  # if the ray is eliminated by security checks
 
-        # Take last point of the ray and create blockage around it for other rays (to create occlusion)
-        last_ray_pts = xyz_points[-1]
-        cur_xyz_voxel[last_ray_pts[0] - (size_of_block + 1): last_ray_pts[0] + size_of_block,
-        last_ray_pts[1] - (size_of_block + 1): last_ray_pts[1] + size_of_block,
-        last_ray_pts[2] - (size_of_block + 1): last_ray_pts[2] + size_of_block] = - 1
-
-        # Take only the part of ray before the blockage
-        if (ray_stats == -1).any():
-            # find the first intersection index
-            first_intersection = (np.where(ray_stats == -1)[0][0])
-            xyz_points = xyz_points[:first_intersection]
+        # if len(xyz_points) == 0: continue  # if the ray is eliminated by security checks
+        #
+        # # Take last point of the ray and create blockage around it for other rays (to create occlusion)
+        # last_ray_pts = xyz_points[-1]
+        # cur_xyz_voxel[last_ray_pts[0] - (size_of_block + 1): last_ray_pts[0] + size_of_block,
+        # last_ray_pts[1] - (size_of_block + 1): last_ray_pts[1] + size_of_block,
+        # last_ray_pts[2] - (size_of_block + 1): last_ray_pts[2] + size_of_block] = - 1
+        #
+        # # Take only the part of ray before the blockage
+        # if (ray_stats == -1).any():
+        #     # find the first intersection index
+        #     first_intersection = (np.where(ray_stats == -1)[0][0])
+        #     xyz_points = xyz_points[:first_intersection]
 
         # Update voxel grid with the visibility of the ray
         cur_xyz_voxel[xyz_points[:, 0], xyz_points[:, 1], xyz_points[:, 2]] = 1
@@ -333,7 +335,8 @@ def mask_KNN_by_visibility(pts, K, cfg, margin=0.15):
     KNN_pts = NearestNeighbors(n_neighbors=K, algorithm='kd_tree').fit(pts).kneighbors(pts[:, :3], return_distance=True)
 
 
-    free_pts = margin_visibility_freespace(pts, pose=(0, 0, 0), cfg=cfg, margin=margin)
+    # free_pts = margin_visibility_freespace(pts, pose=(0, 0, 0), cfg=cfg, margin=margin)
+    free_pts = visibility_freespace(pts, pose=(0, 0, 0), cfg=cfg)
 
     close_freespace = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(pts).kneighbors(free_pts[:, :3],
                                                                                                return_distance=True)
@@ -354,163 +357,86 @@ def mask_KNN_by_visibility(pts, K, cfg, margin=0.15):
     return masked_KNN
 
 if __name__ == "__main__":
-    frame = 162
-    data = np.load(f'/home/patrik/rci/experiments/scoop_vis_smooth/pc_res/{frame:06d}_res.npz', allow_pickle=True)
-    pc1 = data['pc1'][:, [0, 2, 1]]
-    gt_flow1 = data['gt_flow_for_pc1'][:, [0, 2, 1]]
-
-    cfg = {"x_min": -50,
-           "x_max": 50,
-           "y_min": -50,
-           "y_max": 50,
-           "z_min": -5,
-           "z_max": 5,
-           "cell_size": (0.05, 0.05, 0.05),
-           "size_of_block": 1,
-           }
-
-    margin = 0.01
-    # freespace = margin_visibility_freespace(pc1, (0,0,0), cfg, margin=margin)
-    # knn = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(pc1).kneighbors(freespace[:, :3], return_distance=True)
-    # res_freespace = freespace[knn[0][:, 0] > margin, :3]
     from vis.deprecated_vis import visualize_multiple_pcls, visualize_points3D
-
-    # visualize_multiple_pcls(*[pc1, freespace, res_freespace])
-    # visualize_multiple_pcls(*[res_freespace, pc1])
-
-    masked_KNN = mask_KNN_by_visibility(pc1, K=32, cfg=cfg, margin=margin)
-
-    r, ind = raycast_NN(pc1, masked_KNN, fill_pts=10)
-
-    visualize_points3D(r, ind[:,1])
-
     import torch
-    gt_flow = torch.from_numpy(gt_flow1).unsqueeze(0)
 
 
-    smooth_knn = NearestNeighbors(n_neighbors=32, algorithm='kd_tree').fit(pc1).kneighbors(pc1, return_distance=True)[1]
+    # TODO key is to do visibility right! Probably sim?
+    # todo do visibility by NN of "image" pixels and create area by making every neighbor visible to each other. Margin based on ground accuracy or angle?
 
-    smooth_knn = torch.from_numpy(smooth_knn)
-    masked_KNN = torch.from_numpy(masked_KNN)
-
-    smooth_loss(gt_flow, NN_idx=smooth_knn)
-    smooth_loss(gt_flow, NN_idx=masked_KNN)
-
-# Save the outputs - debug more
-
-# global_pc1 = np.insert(pc1.copy(), 3, 1, axis=1)
-# global_pc2 = np.insert(pc2.copy(), 3, 1, axis=1)
-#
-#
-# rigid_flow = global_pc1[:, :3] - pc1
-# motion_diff = np.linalg.norm(rigid_flow - est_flow1, axis=1)
-# motion_seg = motion_diff > 0.2
-#
-# velocity = est_flow1 - rigid_flow
-#
-# error_flow = np.linalg.norm(gt_flow1 - est_flow1, axis=1)
-#
-# velocity[motion_seg == False] = 0
-
-# from sklearn.cluster import DBSCAN
-# dbscan = DBSCAN(eps=0.3, min_samples=2)
-# pc1flow_and_pc2 = np.concatenate((pc1 + est_flow1, pc2))
-# cluster_labels = dbscan.fit_predict(pc1flow_and_pc2)
+    # Todo Use visibility to detect ground and assign rigid transform
+    # todo check why the point are shifted
 
 
-# freespace
+    data_path = '/home/patrik/rci/data/kitti_sf/new/000000.npz'
+    data = np.load(data_path)
 
-#
-# freespace = visibility_freespace(pc2, np.array((0,0,0)), cfg)
-# freespace_to_flow = visibility_freespace(pc1 + est_flow1, np.array((0,0,0)), cfg)
-# covered_mask = transfer_voxel_visibility(pc2, pc1 + est_flow1, cell_size=(0.2,0.2,0.2))
-# covered_freespace = transfer_voxel_visibility(freespace, freespace_to_flow, cell_size=(0.2,0.2,0.2))
-# unmatched_pts = (pc1 + est_flow1)[covered_mask==0]
-#
-#
-# # visualize_points3D(freespace_to_flow, covered_freespace==0)a
-# # visualize_multiple_pcls(pc1, pc1 + est_flow1, pc2)
-# # visualize_multiple_pcls(*[freespace, pc1 + est_flow1, pc2])
-# # visualize_multiple_pcls(*[freespace, pc1 + est_flow1, freespace_to_flow, pc2])
-# # visualize_multiple_pcls(*[freespace, pc2])
-#
-# from sklearn.neighbors import NearestNeighbors
-# out = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(freespace).kneighbors(freespace_to_flow[covered_freespace==0], return_distance=True)
-# # visualize_points3D(freespace_to_flow[covered_freespace==0], out[0][:,0], point_size=0.02)
-#
-# pc1_flow_pc2 = np.concatenate((pc1 + est_flow1, pc2), axis=0)
-# geo_motion_clusters = dbscan.fit_predict(pc1_flow_pc2)
-# # geo_motion_clusters = dbscan.fit_predict(pc1)
-# # visualize_points3D(pc1_flow_pc2, geo_motion_clusters)
-#
-#
-# # visualize_multiple_pcls(*[pc1, pc2])
-#
-#
-#
-# # create middle point between point and all of its nearest neighbor
-#
-#
-#
-# pts_nbr = 25585 # this is the case!
-# # visualize_points3D(pc2, np.arange(0, pc2.shape[0]))
-# import torch
-# from pytorch3d.ops.knn import knn_points
-#
+    # visualize_points3D(data['pc2'], data['px2'])
+
+    # column of pts
+    pc2 = data['pc2'][:, [0, 2, 1]] # swap
+    valid_mask = np.linalg.norm(pc2, axis=1) < 35
+
+    chosen_px = 776.
+    chosen_py = 500.
 
 
-# K = 32
-# pc2 = torch.from_numpy(pc2).unsqueeze(0)
-# est_flow1 = torch.from_numpy(est_flow1).unsqueeze(0)
-#
-# bs, n, c = est_flow1.shape
-#
-# pc2_NN_pc2 = knn_points(pc2, pc2, K=K)
-#
-# all_NN_pts = pc2[0, pc2_NN_pc2.idx[0]]
-# middle_pts = (all_NN_pts.permute(1,0,2) + pc2) / 2
-#
-#
-# pts_nbr_in_freespace = transfer_voxel_visibility(freespace, middle_pts.reshape(-1, 3).numpy(), cell_size=cfg['cell_size'])
-# NN_outside_freespace = pts_nbr_in_freespace.reshape(n, K).astype(bool) == False
-# NN_outside_freespace = torch.from_numpy(NN_outside_freespace).unsqueeze(0)
-#
-# identity_vector = torch.arange(NN_outside_freespace.shape[1]).repeat(32,1).permute(1,0).unsqueeze(0)
-#
-# masked_NN = pc2_NN_pc2.idx * NN_outside_freespace + identity_vector * (NN_outside_freespace==False).to(torch.long)
-#
-#
-# anchor_NN = pc2_NN_pc2.idx[0, pts_nbr, :]
-#
-# KNN_pts = pc2[0, anchor_NN]
-#
-# # vectorized create connections between two 3D points as a line of 3D points
-#
-#
-#
-#
-# visualize_multiple_pcls(*[freespace, all_KNN_rays.flatten(0,1)])
-#
-#
-# # KNN_outside_freespace(all_KNN_rays, freespace, margin=1, min_ray_dist=0.1)
-#
-#
-#
-# rays_in_freespace = transfer_voxel_visibility(freespace, all_KNN_rays.flatten(0,1).numpy(), cell_size=cfg['cell_size'])
+    mask = (data['px2'] > chosen_px - 5) & (data['px2'] < chosen_px + 5) & (valid_mask) #&\
+           # (data['py2'] > chosen_py) & (data['py2'] < chosen_py + 1)
 
-# smooth_flow_loss, smooth_flow_per_point = smooth_loss(est_flow1, pc2_NN_pc2.idx, mask=NN_outside_freespace)
+    pc2_col = pc2[mask].copy()
+
+    # visualize_multiple_pcls(*[pc2_col, pc2])
+    # fill intermediate point in pc2_col linearly
+    # pc2_col = np.concatenate([pc2_col, np.array([[0, 0, 0]])], axis=0)
+
+    # sort by distance
+    # pc2_col[:, 2] = pc2_col[pc2_col[:,2].argsort()[::1]]
+    # visualize_points3D(pc2_col, pc2_col[:, 0].argsort())
+    # pc2_col[:, 2].argsort()
+    visualize_points3D(pc2_col, np.arange(pc2_col.shape[0]))
+
+    # pc2_col = np.sort(pc2_col, axis=0)  # sort by dist?
 
 
-# # todo Simon: naucit vystup ze SCOOPu pro SLIM, i to prodat v bakalarce - domain adaptation as well
-
-#
-# # concate middle Pts
-# flattened_middle_pts = np.concatenate((middle_pts), axis=0)
-#
-# NN_in_freespace = transfer_voxel_visibility(freespace, flattened_middle_pts, cell_size=(0.2,0.2,0.2))
-# visualize_points3D(flattened_middle_pts, NN_in_freespace, point_size=0.02)
-#
-# NN_in_freespace = NN_in_freespace.reshape(middle_pts.shape[0], middle_pts.shape[1]).astype(bool)
-#
+    sensor_pose = np.array([0, 0, 0])
+    margin = 0.05
 
 
+    # raycast point cloud
+
+    # eliminate by NN
+
+    K = 16
+    col_NN_dist, col_NN_ind = NearestNeighbors(n_neighbors=K, algorithm='kd_tree').fit(pc2_col).kneighbors(pc2_col, return_distance=True)
+
+    rays_NN, indices_NN = raycast_NN(pc2_col, col_NN_ind, fill_pts=100)
+
+    # eliminate NN rays from rays
+
+
+    # apply multiprocessing per-pixel
+    # use rays from whole pc?
+
+    # margin chosen by data so nearby point do not get eliminated
+
+    point_connection = create_connecting_pts(pc2_col, inbetween_dist=margin)
+    all_rays = raycast_pts(pc2_col, sensor_pose=(0, 0, 0), margin=margin)
+    kept_rays = eliminate_rays_by_margin_distance(all_rays, point_connection, margin=margin * 2)
+
+    close_dist_NN, close_indices_NN = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(kept_rays).kneighbors(rays_NN, return_distance=True)
+
+    kept_rays_mask = close_dist_NN[:, 0] > margin
+
+
+    invalid_indices = indices_NN[kept_rays_mask == 0]
+
+    masked_KNN = col_NN_ind.copy()
+    masked_KNN[invalid_indices[:, 0], invalid_indices[:, 1]] = invalid_indices[:, 0]
+
+    masked_rays_NN, _ = raycast_NN(pc2_col, masked_KNN, fill_pts=100)
+
+    # distance margin
+
+    # visualize_multiple_pcls(*[kept_rays, point_connection, rays_NN, pc2_col], bg_color=(1, 1, 1, 1))
+    visualize_multiple_pcls(*[kept_rays, point_connection, masked_rays_NN, pc2_col, pc2], bg_color=(1, 1, 1, 1))
