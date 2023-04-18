@@ -82,13 +82,14 @@ def process_one_frame(idx):
 
 
     # breakpoint()
-    np.savetxt('test.csv',np.concatenate((valid_pc2,instance_mask.reshape(-1,1)),axis=1))
+    # np.savetxt('test.csv',np.concatenate((valid_pc2,instance_mask.reshape(-1,1)),axis=1))
 
 
     np.savez_compressed(osp.join(save_path, '{:06d}.npz'.format(idx)), pc1=valid_pc1, pc2=valid_pc2,
                                                                        flow=flow, inst_pc1=instance_mask,
                                                                        inst_pc2=instance_mask,
-                                                                       px2=valid_px2, py2=valid_py2)
+                                                                       px2=valid_px2, py2=valid_py2,
+                                                                       valid_mask=final_mask, depth2=depth2)
 
 if __name__ == '__main__':
     # pool = Pool(10)
@@ -96,5 +97,5 @@ if __name__ == '__main__':
     # pool.map(process_one_frame, indices)
     # pool.close()
     # pool.join()
-    #
+
     process_one_frame(0)

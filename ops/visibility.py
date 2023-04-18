@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
-from ops.rays import create_connecting_pts, raycast_pts, eliminate_rays_by_margin_distance
+from ops.metric import KNN_precision
+from ops.rays import create_connecting_pts, raycast_pts, eliminate_rays_by_margin_distance, raycast_NN
 
 
 def transfer_voxel_visibility(accum_freespace : np.ndarray, global_pts, cell_size):
@@ -161,41 +162,6 @@ def KNN_outside_freespace(KNN_rays, freespace, margin=1, min_ray_dist=0.1, devic
     keep_NN = closest_K_dist > min_ray_dist
 
     return keep_NN
-
-
-def raycast_NN(pts, KNN, fill_pts=10):
-    '''
-
-    :param pts: Points Nx3
-    :param KNN: Nearest neighboor indices NxK
-    :param fill_pts: number of intermediate points to fill the ray
-    :return: all rays as array of points, corresponding indices [NK x 2] to the rays for furthr masking
-    '''
-    all_NN_pts = pts[KNN]
-    K = KNN.shape[1]
-
-    all_rays = []
-
-    rolled_NN_pts = np.concatenate(all_NN_pts, axis=0)
-
-    rolled_pts = pts.repeat(K, axis=0)  # I need to repeat here!
-
-    indices_N = np.arange(len(pts)).repeat(K)
-    indices_K = np.tile(np.arange(K), len(pts))
-
-    indices = np.stack((indices_N, indices_K)).T
-
-    for i in range(fill_pts):
-        ray = rolled_pts + (rolled_NN_pts - rolled_pts) * (i / fill_pts)
-        all_rays.append(ray)
-
-    all_indices = np.tile(indices, (fill_pts, 1))
-    all_rays_array = np.concatenate(all_rays, axis=0)
-
-    return all_rays_array, all_indices
-
-
-
 
 
 def smooth_loss(est_flow, NN_idx, loss_norm=1, mask=None):
@@ -371,21 +337,27 @@ if __name__ == "__main__":
     data_path = '/home/patrik/rci/data/kitti_sf/new/000000.npz'
     data = np.load(data_path)
 
-    # visualize_points3D(data['pc2'], data['px2'])
-
+    gt_flow = data['flow'][:, [0, 2, 1]]  # swap
+    depth2 = data['depth2']
     # column of pts
-    pc2 = data['pc2'][:, [0, 2, 1]] # swap
-    valid_mask = np.linalg.norm(pc2, axis=1) < 35
+    pc1 = data['pc1'][:, [0, 2, 1]] # swap
+    valid_mask1 = np.linalg.norm(pc1, axis=1) < 35
+    pc1 = pc1[valid_mask1]
 
-    chosen_px = 776.
+    pc2 = data['pc2'][:, [0, 2, 1]]  # swap
+    valid_mask2 = np.linalg.norm(pc2, axis=1) < 35
+
+
+    chosen_px = 91.
     chosen_py = 500.
 
 
-    mask = (data['px2'] > chosen_px - 5) & (data['px2'] < chosen_px + 5) & (valid_mask) #&\
+    mask = (data['px2'] > chosen_px - 25) & (data['px2'] < chosen_px + 25) & valid_mask2#&\
            # (data['py2'] > chosen_py) & (data['py2'] < chosen_py + 1)
 
     pc2_col = pc2[mask].copy()
 
+    visualize_points3D(pc2[valid_mask2], data['px2'][valid_mask2])
     # visualize_multiple_pcls(*[pc2_col, pc2])
     # fill intermediate point in pc2_col linearly
     # pc2_col = np.concatenate([pc2_col, np.array([[0, 0, 0]])], axis=0)
@@ -440,3 +412,65 @@ if __name__ == "__main__":
 
     # visualize_multiple_pcls(*[kept_rays, point_connection, rays_NN, pc2_col], bg_color=(1, 1, 1, 1))
     visualize_multiple_pcls(*[kept_rays, point_connection, masked_rays_NN, pc2_col, pc2], bg_color=(1, 1, 1, 1))
+    visualize_multiple_pcls(*[kept_rays, masked_rays_NN, pc2_col,], bg_color=(1, 1, 1, 1))
+
+    # NN metric
+
+    orig_K = 32
+    orig_dist_NN, orig_indices_NN = NearestNeighbors(n_neighbors=orig_K, algorithm='kd_tree').fit(pc2).kneighbors(
+        pc2, return_distance=True)
+
+    instance_mask = data['inst_pc2']
+
+    NN_precision, at_least_one_incorrect = KNN_precision(orig_indices_NN, instance_mask, include_first=False)
+
+    # visualize_points3D(pc2, at_least_one_incorrect)
+    # visualize_points3D(pc2, instance_mask)
+
+    px2_round = np.floor(data['px2'])
+    py2_round = np.floor(data['py2'])
+    distance = np.linalg.norm(pc2, axis=1)
+
+    visualize_points3D(pc2, px2_round)
+    # todo sort pc2 by distance
+
+
+    maximum_px = np.max((px2_round, py2_round)).astype(int)
+    grid_2D = np.zeros((maximum_px + 1, maximum_px + 1), dtype=int)    # maximum
+    grid_2D[px2_round.astype(int), py2_round.astype(int)] = np.arange(pc2.shape[0])
+
+    all_rays = []
+    margin = 2
+    from tqdm import tqdm
+    from scipy.spatial.distance import cdist
+    for r in tqdm(range(1, grid_2D.shape[0] - 1)):
+        for c in range(1, grid_2D.shape[1] - 1):
+
+            pt_index = grid_2D[r, c]
+
+
+
+            end_pt = pc2[pt_index]
+
+            surrounding_pts = grid_2D[r-1:r+2, c-1:c+2]
+            surrounding_pts = surrounding_pts[surrounding_pts != 0].flatten()
+
+            if len(surrounding_pts) > 0:
+                # project ray
+
+                one_ray = create_connecting_pts(np.array(([0,0,0], pc2[pt_index])), inbetween_dist=margin)
+
+                cross_dist = cdist(one_ray, pc2[surrounding_pts])
+                print(cross_dist.shape)
+                cross_dist = np.min(cross_dist, axis=1)
+
+                # visualize_multiple_pcls(*[one_ray, pc2[surrounding_pts]], bg_color=(1, 1, 1, 1))
+
+                all_rays.append(one_ray)
+                break
+
+
+
+    front_indices = np.unique(grid_2D[grid_2D != 0])
+
+    visualize_multiple_pcls(*[pc2[front_indices]], bg_color=(1, 1, 1, 1), lookat=[0,0,0])

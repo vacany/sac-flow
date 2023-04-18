@@ -6,17 +6,29 @@ import glob
 import matplotlib.pyplot as plt
 import sys
 import socket
+import time
 
-from scipy import interpolate
 
 
+
+class FileWatcher():
+
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.last_modified = os.stat(file_path).st_mtime
+
+    def check_modification(self):
+        stamp = os.stat(self.file_path).st_mtime
+        if stamp > self.last_modified:
+            self.last_modified = stamp
+            return True
 
 
 if socket.gethostname().startswith("Pat"):
     sys.path.append('/home/patrik/.local/lib/python3.8/site-packages')
     import pptk
 
-    def visualize_points3D(points, labels=None, point_size=0.01):
+    def visualize_points3D(points, labels=None, point_size=0.02, **kwargs):
         if not socket.gethostname().startswith("Pat"):
             return
 
@@ -26,11 +38,14 @@ if socket.gethostname().startswith("Pat"):
         if type(labels) is not np.ndarray and labels is not None:
             labels = labels.detach().cpu().numpy()
 
-        if labels is None:
+
+        if labels.any() is None:
             v = pptk.viewer(points[:,:3])
         else:
             v = pptk.viewer(points[:, :3], labels)
+
         v.set(point_size=point_size)
+        v.set(**kwargs)
 
         return v
 
@@ -130,13 +145,15 @@ if socket.gethostname().startswith("Pat"):
         visualize_multiple_pcls(*[p_i, vis_p_i, p_j])
 
 else:
-    def visualize_points3D(pts, color=None, path=os.path.expanduser("~") + '/data/tmp_vis/cur.npz'):
-        np.save(path, pts)
+    def visualize_points3D(points, labels=None, **kwargs):
+        folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
+        file = f'{time.time()}_cur.npz'
 
-        if color is None:
-            np.save(path + '_color.npy', np.zeros(pts.shape[0], dtype=bool))
-        else:
-            np.save(path + '_color.npy', color)
+        command = 'visualize_points3D'
+        # breakpoint()
+        np.savez(folder_path + '/' + file, points=points, labels=labels, command=command, **kwargs)
+
+
 
     def visualize_flow3d(pts1, pts2, frame_flow):
         pass
@@ -144,7 +161,18 @@ else:
     def visualize_plane_with_points(points, n_vector, d):
         pass
     def visualize_multiple_pcls(*args, **kwargs):
-        pass
+        folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
+        file = f'{time.time()}_cur.npz'
+
+        command = 'visualize_multiple_pcls'
+
+        # pcs = [a.detach().cpu().numpy() for a in args]
+        np.savez(folder_path + '/' + file, args=args, command=command, **kwargs)
+
+
+    def show_image(image, title=None):
+        plt.imshow(image)
+        plt.savefig('my_plot.png')
 
 # matplotlib
 def visualize_connected_points(pts1, pts2, title=None, savefig=None):
@@ -172,81 +200,33 @@ def visualize_connected_points(pts1, pts2, title=None, savefig=None):
     plt.axis('equal')
     plt.show()
 
-# def visualize_flow3d(pts, velocity, savefig=None):
-#
-#     fig = plt.figure(figsize=(10, 10))
-#     ax = fig.add_subplot(111, projection='3d')
-#
-#     for idx in range(len(pts)):
-#         ax.quiver(pts[idx, 0], pts[idx, 1], pts[idx, 2],  # <-- starting point of vector
-#                   velocity[idx, 0], velocity[idx, 1], velocity[idx, 2],  # <-- directions of vector
-#                   color='red', alpha=.6, lw=2,
-#                   )
-#     plt.show()
-#
-# def plot_points3d(pts, features, lookat=None, title="Point Cloud Lookat", save=None):
-#
-#     fig = plt.figure(figsize=(5, 5), dpi=200)
-#     ax = fig.add_subplot(projection='3d')
-#
-#     max_r = 20
-#     filter_pts = pts.copy()
-#
-#     # mask =
-#     # mask = min_square_by_pcl(filter_pts, lookat[None,:], extend_dist=(max_r, max_r, max_r), return_mask=True)
-#
-#     xs = filter_pts[mask, 0]
-#     ys = filter_pts[mask, 1]
-#     zs = filter_pts[mask, 2]
-#
-#     ax.scatter(xs, ys, zs, marker='.', s=2, c=features[mask], alpha=0.8, cmap='jet', vmin=0, vmax=1)
-#     ax.set_xlim([-.5 + lookat[0], 6 + lookat[0]])
-#     ax.set_ylim([-4 + lookat[1], 4 + lookat[1]])
-#     ax.set_zlim([-4 + lookat[2], 4 + lookat[2]])
-#
-#     ax.view_init(elev=25, azim=210)
-#     ax.dist = 6
-#     colormap = plt.cm.get_cmap('jet', 10)
-#
-#     plt.colorbar(plt.cm.ScalarMappable(cmap=colormap), orientation='vertical')
-#     plt.title(title)
-#     plt.axis('off')
-#
-#     if save is not None:
-#         plt.savefig(save)
-#     else:
-#         plt.show()
-#
-#     plt.close()
+if __name__ == "__main__":
+    # tmp_folder = os.path.expanduser("~") + '/rci/data/tmp_vis/'
+    # tmp_folder = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
+    tmp_folder = os.path.expanduser("~") + '/cmp/pcflow/toy_samples/tmp_vis/'
 
-def fit_3D_spline():
-    # 3D example
-    total_rad = 10
-    z_factor = 3
-    noise = 0.1
+    # command = 'visualize_points3D'
+    # print(getattr(sys.modules[__name__], command))
 
-    num_true_pts = 200
-    s_true = np.linspace(0, total_rad, num_true_pts)
-    x_true = np.cos(s_true)
-    y_true = np.sin(s_true)
-    z_true = s_true/z_factor
+    while True:
+        time.sleep(0.2)
+        print('waiting for files in folder ', tmp_folder, ' ...')
+        files = glob.glob(tmp_folder + '/*.npz')
 
-    num_sample_pts = 80
-    s_sample = np.linspace(0, total_rad, num_sample_pts)
-    x_sample = np.cos(s_sample) + noise * np.random.randn(num_sample_pts)
-    y_sample = np.sin(s_sample) + noise * np.random.randn(num_sample_pts)
-    z_sample = s_sample/z_factor + noise * np.random.randn(num_sample_pts)
+        print(os.stat(tmp_folder).st_mtime)
+        if len(files) > 0:
 
-    tck, u = interpolate.splprep([x_sample,y_sample,z_sample], s=2)
-    x_knots, y_knots, z_knots = interpolate.splev(tck[0], tck)
-    u_fine = np.linspace(0,1,num_true_pts)
-    x_fine, y_fine, z_fine = interpolate.splev(u_fine, tck)
+            for file in files:
+                print('Loading file: ', file)
 
-    fig2 = plt.figure(2)
-    ax3d = fig2.add_subplot(111, projection='3d')
-    ax3d.plot(x_true, y_true, z_true, 'b')
-    ax3d.plot(x_sample, y_sample, z_sample, 'r*')
-    ax3d.plot(x_knots, y_knots, z_knots, 'go')
-    ax3d.plot(x_fine, y_fine, z_fine, 'g')
-    fig2.show()
-    plt.show()
+                data = np.load(file, allow_pickle=True)
+                command = data['command'].item()
+
+                kwargs = {name: data[name] for name in data.files if name not in ['command']}
+
+                getattr(sys.modules[__name__], command)(**kwargs)
+
+                os.remove(file)
+
+
+
