@@ -89,13 +89,14 @@ def process_one_frame(idx):
                                                                        flow=flow, inst_pc1=instance_mask,
                                                                        inst_pc2=instance_mask,
                                                                        px2=valid_px2, py2=valid_py2,
-                                                                       valid_mask=final_mask, depth2=depth2)
+                                                                       depth1=depth1, depth2=depth2,
+                                                                        valid_mask=final_mask, )
 
 if __name__ == '__main__':
-    # pool = Pool(10)
-    # indices = range(200)
-    # pool.map(process_one_frame, indices)
-    # pool.close()
-    # pool.join()
+    pool = Pool(10)
+    indices = range(200)
+    pool.map(process_one_frame, indices)
+    pool.close()
+    pool.join()
 
-    process_one_frame(0)
+    # process_one_frame(0)

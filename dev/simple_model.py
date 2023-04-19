@@ -8,7 +8,7 @@ from sklearn.neighbors import NearestNeighbors
 
 from vis.deprecated_vis import visualize_points3D, visualize_multiple_pcls, visualize_flow3d
 from ops.linalg import synchronize_poses, transform_pc
-from ops.visibility import smooth_loss
+from ops.visibility3D import smooth_loss
 # from pytorch3d.ops.knn import knn_points
 
 def scipy_NN(x,y, K=1):

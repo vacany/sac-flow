@@ -144,6 +144,7 @@ if socket.gethostname().startswith("Pat"):
         vis_p_i = p_i @ trans_mat.T
         visualize_multiple_pcls(*[p_i, vis_p_i, p_j])
 
+# todo create server decorator to store the files as it goes
 else:
     def visualize_points3D(points, labels=None, **kwargs):
         folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
@@ -156,7 +157,15 @@ else:
 
 
     def visualize_flow3d(pts1, pts2, frame_flow):
-        pass
+
+        folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
+        file = f'{time.time()}_cur.npz'
+
+        command = 'visualize_flow3d'
+        # breakpoint()
+        np.savez(folder_path + '/' + file, pts1=pts1, pts2=pts2, frame_flow=frame_flow, command=command)
+        # visualize_multiple_pcls(*[pts1, all_rays, pts2], point_size=0.02)
+
 
     def visualize_plane_with_points(points, n_vector, d):
         pass
@@ -173,6 +182,65 @@ else:
     def show_image(image, title=None):
         plt.imshow(image)
         plt.savefig('my_plot.png')
+
+def visualize_KNN_connections(pc, KNN_matrix, fill_pts=10):
+    from ops.rays import raycast_NN
+
+    r_, ind_ = raycast_NN(pc, KNN_matrix, fill_pts=fill_pts)
+
+    visualize_points3D(r_, ind_[:,1], lookat=[0,0,0])
+
+
+# one KNN visual in depth image
+def visualize_one_KNN_in_depth(KNN_image_indices, depth2, chosen_NN, K, margin=0.05, output_path=None):
+
+    origin_pt = KNN_image_indices[chosen_NN, 0]
+    knn_pts = KNN_image_indices[chosen_NN, 1:]
+
+    # connect to origin
+    connections = []
+
+    for k in range(0, K - 1):
+        px = torch.linspace(origin_pt[0], knn_pts[k, 0], 300, device=origin_pt.device)
+        py = torch.linspace(origin_pt[1], knn_pts[k, 1], 300, device=origin_pt.device)
+
+        # linear depth
+        lin_d = depth2[origin_pt[0], origin_pt[1]] + (
+                    depth2[knn_pts[k, 0], knn_pts[k, 1]] - depth2[origin_pt[0], origin_pt[1]]) * torch.linspace(0, 1,
+                                                                                                                300,
+                                                                                                                device=origin_pt.device)
+        orig_d = depth2[px.to(torch.long), py.to(torch.long)]
+        logic_d = lin_d <= orig_d
+        px = px.to(torch.long)
+        py = py.to(torch.long)
+        connections.append(torch.stack([px, py, lin_d, orig_d, logic_d], dim=1))
+
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10), dpi=200)
+    # vis_im = torch.zeros(depth2.shape, device=device)
+    vis_im = depth2.clone()
+    vis_im1 = depth2.clone()
+    vis_im2 = depth2.clone()
+
+    for con in connections:
+        vis_im[con[:, 0].long(), con[:, 1].long()] = con[:, 2]
+        vis_im1[con[:, 0].long(), con[:, 1].long()] = con[:, 3]
+        vis_im2[con[:, 0].long(), con[:, 1].long()] = con[:, 4] * 100
+
+        vis_im[origin_pt[0], origin_pt[1]] = 100
+        vis_im[knn_pts[:, 0], knn_pts[:, 1]] = 75
+
+        vis_im1[origin_pt[0], origin_pt[1]] = 100
+        vis_im1[knn_pts[:, 0], knn_pts[:, 1]] = 75
+
+        vis_im2[origin_pt[0], origin_pt[1]] = 100
+        vis_im2[knn_pts[:, 0], knn_pts[:, 1]] = 75
+
+    ax[0].imshow(vis_im.detach().cpu().numpy())
+    ax[1].imshow(vis_im1.detach().cpu().numpy())
+    ax[2].imshow(vis_im2.detach().cpu().numpy())
+
+    fig.savefig(output_path)
+
 
 # matplotlib
 def visualize_connected_points(pts1, pts2, title=None, savefig=None):

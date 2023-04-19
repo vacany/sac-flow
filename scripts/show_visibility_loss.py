@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from ops.visibility import mask_KNN_by_visibility
+from ops.visibility3D import mask_KNN_by_visibility
 
 
 
