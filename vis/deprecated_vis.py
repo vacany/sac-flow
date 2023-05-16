@@ -39,7 +39,7 @@ if socket.gethostname().startswith("Pat"):
             labels = labels.detach().cpu().numpy()
 
 
-        if labels.any() is None:
+        if labels is None:
             v = pptk.viewer(points[:,:3])
         else:
             v = pptk.viewer(points[:, :3], labels)
@@ -111,6 +111,15 @@ if socket.gethostname().startswith("Pat"):
         # valid_flow = frame_flow[:, 3] == 1
         # vis_flow = frame_flow[valid_flow]
         # threshold for dynamic is flow larger than 0.05 m
+        if type(pts1) is not np.ndarray:
+            points = pts1.detach().cpu().numpy()
+
+        if type(pts2) is not np.ndarray:
+            pts2 = pts2.detach().cpu().numpy()
+
+        if type(frame_flow) is not np.ndarray:
+            frame_flow = frame_flow.detach().cpu().numpy()
+
         dist_mask = np.sqrt((frame_flow[:,:3] ** 2).sum(1)) > 0.05
 
         vis_pts = pts1[dist_mask,:3]
@@ -123,7 +132,7 @@ if socket.gethostname().startswith("Pat"):
 
         all_rays = []
         # breakpoint()
-        for x in range(int(20)):
+        for x in range(1, int(20)):
             ray_points = vis_pts + (vis_flow[:, :3]) * (x / int(20))
             all_rays.append(ray_points)
 
@@ -215,7 +224,7 @@ def visualize_one_KNN_in_depth(KNN_image_indices, depth2, chosen_NN, K, margin=0
         py = py.to(torch.long)
         connections.append(torch.stack([px, py, lin_d, orig_d, logic_d], dim=1))
 
-    fig, ax = plt.subplots(3, 1, figsize=(10, 10), dpi=200)
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10), dpi=400)
     # vis_im = torch.zeros(depth2.shape, device=device)
     vis_im = depth2.clone()
     vis_im1 = depth2.clone()
@@ -235,9 +244,18 @@ def visualize_one_KNN_in_depth(KNN_image_indices, depth2, chosen_NN, K, margin=0
         vis_im2[origin_pt[0], origin_pt[1]] = 100
         vis_im2[knn_pts[:, 0], knn_pts[:, 1]] = 75
 
-    ax[0].imshow(vis_im.detach().cpu().numpy())
-    ax[1].imshow(vis_im1.detach().cpu().numpy())
-    ax[2].imshow(vis_im2.detach().cpu().numpy())
+
+
+    ax[0].imshow(vis_im.detach().cpu().numpy(), interpolation='none', aspect='auto', )
+    ax[1].imshow(vis_im1.detach().cpu().numpy(), interpolation='none', aspect='auto', cmap='jet')
+
+    # for idx in knn_pts.detach().cpu().numpy():
+    #     j, i = idx
+    #     label = depth2[idx[0], idx[1]]
+    #     # ax[1].text(i,j,label.item(),ha='center', va='center', fontsize=2)
+    #     # print(i,j,label)
+
+    ax[2].imshow(vis_im2.detach().cpu().numpy(), interpolation='none', aspect='auto')
 
     fig.savefig(output_path)
 
@@ -292,7 +310,11 @@ if __name__ == "__main__":
 
                 kwargs = {name: data[name] for name in data.files if name not in ['command']}
 
-                getattr(sys.modules[__name__], command)(**kwargs)
+                if 'multiple' in command:
+                    pcs = [data['args'][i] for i in range(len(data['args']))]
+                    visualize_multiple_pcls(*pcs)
+                else:
+                    getattr(sys.modules[__name__], command)(**kwargs)
 
                 os.remove(file)
 

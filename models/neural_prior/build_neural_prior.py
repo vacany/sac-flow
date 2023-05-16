@@ -10,7 +10,7 @@ from models.neural_prior.model import Neural_Prior
 from models.neural_prior import config
 
 from vis.deprecated_vis import visualize_flow3d, visualize_points3D
-from ops.linalg import transform_pc
+from ops.transform import transform_pc
 
 parser = argparse.ArgumentParser(description="Neural Scene Flow Prior.")
 config.add_config(parser)

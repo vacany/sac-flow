@@ -60,7 +60,7 @@ class Refiner(torch.nn.Module):
         epe_all = np.zeros(args.test_time_num_step + 1, dtype=np.float32)
 
         # load NN mask
-
+        # personilize functions?
         # mask to smooth loss
 
         cfg = {"x_min" : -50,
@@ -77,6 +77,7 @@ class Refiner(torch.nn.Module):
             # breakpoint()
             masked_KNN = mask_KNN_by_visibility(pc_0_orig[0].detach().cpu().numpy(), 32, cfg)
             masked_KNN = torch.from_numpy(masked_KNN).cuda()
+            # load from harddisk?
 
         else:
             masked_KNN = None
