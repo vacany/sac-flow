@@ -71,8 +71,7 @@ def KNN_visibility_solver(KNN_image_indices, depth, margin=0.05):
 
         valid_KNN *= valid_connection
 
-
     return valid_KNN
-    # visuals
+
 
 

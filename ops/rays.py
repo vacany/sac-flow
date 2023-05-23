@@ -85,3 +85,4 @@ def raycast_NN(pts, KNN, fill_pts=10):
     all_rays_array = np.concatenate(all_rays, axis=0)
 
     return all_rays_array, all_indices
+

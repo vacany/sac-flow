@@ -1,11 +1,8 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
-from tqdm import tqdm
-import torch
 
 from ops.metric import KNN_precision
 from ops.rays import create_connecting_pts, raycast_pts, eliminate_rays_by_margin_distance, raycast_NN
-
 
 
 def transfer_voxel_visibility(accum_freespace : np.ndarray, global_pts, cell_size):
@@ -50,7 +47,7 @@ def transfer_voxel_visibility(accum_freespace : np.ndarray, global_pts, cell_siz
 
 
 
-def visibility_freespace(curr_pts, pose=torch.tensor((0,0,0)), cell_size=(0.1,0.1,0.1), size_of_block=1):
+def visibility_freespace(curr_pts, pose, cfg):
     '''
     Local point cloud and lidar position with respect to the point local frame. Then it is consistent.
     :param curr_pts: point cloud for raycasting
@@ -60,14 +57,15 @@ def visibility_freespace(curr_pts, pose=torch.tensor((0,0,0)), cell_size=(0.1,0.
     '''
     assert len(curr_pts.shape) == 2
 
+    cell_size = cfg['cell_size']
+    size_of_block = cfg['size_of_block']
     # Sort the point from closest to farthest
-    distance = torch.sqrt(curr_pts[..., 0] ** 2 + curr_pts[..., 1] ** 2 + curr_pts[..., 2] ** 2)
+    distance = np.sqrt(curr_pts[..., 0] ** 2 + curr_pts[..., 1] ** 2 + curr_pts[..., 2] ** 2)
     index_by_distance = distance.argsort()
     curr_pts = curr_pts[index_by_distance]
 
-    cell_size = torch.from_numpy(np.array(cell_size)).to(curr_pts.device)
     # Get the boundaries of the raycasted point cloud
-    x_min, x_max, y_min, y_max, z_min, z_max = -35, 35, -35, 35, -5, 5
+    x_min, x_max, y_min, y_max, z_min, z_max = cfg['x_min'], cfg['x_max'], cfg['y_min'], cfg['y_max'], cfg['z_min'], cfg['z_max']
 
     x_min -= 2
     y_min -= 2
@@ -78,33 +76,31 @@ def visibility_freespace(curr_pts, pose=torch.tensor((0,0,0)), cell_size=(0.1,0.
     z_max += 1
 
     # Create voxel grid
-    xyz_shape = (int(torch.round((x_max - x_min) / cell_size[0]) + 3),
-                int(torch.round((y_max - y_min) / cell_size[1]) + 3),
-                int(torch.round((z_max - z_min) / cell_size[2]) + 3))
+    xyz_shape = np.array(
+            (np.round((x_max - x_min) / cell_size[0]) + 3,
+             np.round((y_max - y_min) / cell_size[1]) + 3,
+             np.round((z_max - z_min) / cell_size[2]) + 3),
+            dtype=int)
 
-
-    # xyz_shape = torch.from_numpy(xyz_shape).to(curr_pts.device)
     # 0 is no stat, -1 is block, 1 is free, 2 is point
-    cur_xyz_voxel = torch.zeros(xyz_shape, device=curr_pts.device)
-    accum_xyz_voxel = torch.zeros(xyz_shape, device=curr_pts.device)
+    cur_xyz_voxel = np.zeros(xyz_shape)
+    accum_xyz_voxel = np.zeros(xyz_shape)
 
-
-    curr_xyz_points = ((curr_pts[:, :3] - torch.tensor((x_min, y_min, z_min), device=curr_pts.device)) / cell_size).long()
+    curr_xyz_points = np.array(np.round(((curr_pts[:, :3] - np.array((x_min, y_min, z_min))) / cell_size)), dtype=int)
     cur_xyz_voxel[curr_xyz_points[:, 0], curr_xyz_points[:, 1], curr_xyz_points[:, 2]] = 2
 
 
     # Iterate one-by-one and update the voxel grid with visibility and blockage for next rays
-    for p in tqdm(curr_pts):
+    for p in curr_pts:
         # Calculate number of intermediate points based on the cell size of voxel grid
-        nbr_inter = int(35 / cell_size[0])
+        nbr_inter = int(cfg['x_max'] / cell_size[0])
         # Raycast the beam from pose to the point
-
-        ray = torch.stack((torch.linspace(pose[0], p[0], nbr_inter, device=curr_pts.device),
-                       torch.linspace(pose[1], p[1], nbr_inter, device=curr_pts.device),
-                          torch.linspace(pose[2], p[2], nbr_inter, device=curr_pts.device))).T
+        ray = np.array((np.linspace(pose[0], p[0], nbr_inter),
+                       np.linspace(pose[1], p[1], nbr_inter),
+                          np.linspace(pose[2], p[2], nbr_inter))).T
 
         # Transform the ray to voxel grid coordinates
-        xyz_points = torch.round(((ray[:, :3] - torch.tensor((x_min, y_min, z_min), device=curr_pts.device)) / cell_size)).long()
+        xyz_points = np.array(np.round(((ray[:, :3] - np.array((x_min, y_min, z_min))) / cell_size)), dtype=int)
         # xyz_points = xyz_points[((xyz_points != xyz_points[-1]).all(1)) & ((xyz_points != xyz_points[0]).all(1))] # leave last and first cell
         # xyz_points = xyz_points[(xyz_points[:,2] != xyz_points[-1,2] - 1) &
         #                         (xyz_points[:,2] != xyz_points[-1,2]) &
@@ -124,7 +120,7 @@ def visibility_freespace(curr_pts, pose=torch.tensor((0,0,0)), cell_size=(0.1,0.
         # Take only the part of ray before the blockage
         if (ray_stats == -1).any():
             # find the first intersection index
-            first_intersection = (torch.where(ray_stats == -1)[0][0])
+            first_intersection = (np.where(ray_stats == -1)[0][0])
             xyz_points = xyz_points[:first_intersection]
 
         # Update voxel grid with the visibility of the ray
@@ -132,15 +128,14 @@ def visibility_freespace(curr_pts, pose=torch.tensor((0,0,0)), cell_size=(0.1,0.
         accum_xyz_voxel[xyz_points[:, 0], xyz_points[:, 1], xyz_points[:, 2]] += 1
 
     # point_coords = np.argwhere(cur_xyz_voxel == 2)
-
-    ray_coords = torch.argwhere(cur_xyz_voxel == 1)
+    ray_coords = np.argwhere(cur_xyz_voxel == 1)
     # blocks_coords = np.argwhere(cur_xyz_voxel == -1)
 
     accum_freespace_feature = accum_xyz_voxel[ray_coords[:,0], ray_coords[:,1], ray_coords[:,2]]
 
     # restore the original coordinates in meters and add x,y,z, freespace feature
-    accum_freespace_meters = ray_coords[:, :3] * cell_size + torch.tensor((x_min, y_min, z_min), device=curr_pts.device)
-    # accum_freespace_meters = np.insert(accum_freespace_meters, 3, accum_freespace_feature, axis=1)
+    accum_freespace_meters = ray_coords[:, :3] * cell_size + np.array((x_min, y_min, z_min))
+    accum_freespace_meters = np.insert(accum_freespace_meters, 3, accum_freespace_feature, axis=1)
 
     return accum_freespace_meters
 

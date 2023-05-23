@@ -233,29 +233,31 @@ def visualize_one_KNN_in_depth(KNN_image_indices, depth2, chosen_NN, K, margin=0
     for con in connections:
         vis_im[con[:, 0].long(), con[:, 1].long()] = con[:, 2]
         vis_im1[con[:, 0].long(), con[:, 1].long()] = con[:, 3]
-        vis_im2[con[:, 0].long(), con[:, 1].long()] = con[:, 4] * 100
+        vis_im2[con[:, 0].long(), con[:, 1].long()] = con[:, 4] * 300
 
-        vis_im[origin_pt[0], origin_pt[1]] = 100
-        vis_im[knn_pts[:, 0], knn_pts[:, 1]] = 75
+        vis_im[origin_pt[0], origin_pt[1]] = 300
+        vis_im[knn_pts[:, 0], knn_pts[:, 1]] = 175
 
-        vis_im1[origin_pt[0], origin_pt[1]] = 100
-        vis_im1[knn_pts[:, 0], knn_pts[:, 1]] = 75
+        vis_im1[origin_pt[0], origin_pt[1]] = 300
+        vis_im1[knn_pts[:, 0], knn_pts[:, 1]] = 175
 
-        vis_im2[origin_pt[0], origin_pt[1]] = 100
-        vis_im2[knn_pts[:, 0], knn_pts[:, 1]] = 75
+        vis_im2[origin_pt[0], origin_pt[1]] = 300
+        vis_im2[knn_pts[:, 0], knn_pts[:, 1]] = 175
 
 
 
-    ax[0].imshow(vis_im.detach().cpu().numpy(), interpolation='none', aspect='auto', )
-    ax[1].imshow(vis_im1.detach().cpu().numpy(), interpolation='none', aspect='auto', cmap='jet')
-
+    ax[0].imshow(np.flip(vis_im.detach().cpu().numpy(), axis=0), interpolation='none', aspect='auto')
+    ax[0].set_aspect('equal')
+    ax[1].imshow(np.flip(vis_im1.detach().cpu().numpy(), axis=0), interpolation='none', aspect='auto', cmap='jet')
+    ax[1].set_aspect('equal')
     # for idx in knn_pts.detach().cpu().numpy():
     #     j, i = idx
     #     label = depth2[idx[0], idx[1]]
     #     # ax[1].text(i,j,label.item(),ha='center', va='center', fontsize=2)
     #     # print(i,j,label)
 
-    ax[2].imshow(vis_im2.detach().cpu().numpy(), interpolation='none', aspect='auto')
+    ax[2].imshow(np.flip(vis_im2.detach().cpu().numpy(), axis=0), interpolation='none', aspect='auto')
+    ax[2].set_aspect('equal')
 
     fig.savefig(output_path)
 
