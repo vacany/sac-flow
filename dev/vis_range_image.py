@@ -5,18 +5,17 @@ from vis.deprecated_vis import *
 import numpy as np
 import torch
 
-if torch.cuda.is_available():
-    device = 'cuda:0'
-else:
-    device = 'cpu'
-
-pc1 = np.load('toy_samples/04_000010.npy')
-
-
 from pytorch3d.ops.knn import knn_points
 from ops.visibility2D import KNN_visibility_solver, substitute_NN_by_mask
 
-# new_nn_ind = substitute_NN_by_mask(nn_ind, valid_KNN)
+
+
+#          sensor_name        qw        qx        qy        qz      tx_m      ty_m      tz_m
+# 9             up_lidar  0.999996  0.000000  0.000000 -0.002848  1.350180  0.000000  1.640420
+# 10          down_lidar -0.000089 -0.994497  0.104767  0.000243  1.355162  0.000133  1.565252
+# Argoverse 40° vertical field of view
+# 2x 32 beam lasers
+
 
 class VisibilityDepth():
 
@@ -126,7 +125,7 @@ class VisibilityDepth():
 
         KNN_image_indices = self.KNN_coords(pc2, nn_ind)
 
-        depth = torch.from_numpy(self.depth).to(device)
+        depth = torch.from_numpy(self.depth).to(pc2.device)
         valid_KNN = KNN_visibility_solver(KNN_image_indices, depth, margin=3)
 
         visibility_aware_KNN = substitute_NN_by_mask(nn_ind, valid_KNN)
@@ -137,39 +136,35 @@ class VisibilityDepth():
 
     def run_on_self_pc(self):
 
-        torch_pc = torch.from_numpy(self.pc).unsqueeze(0).to(device)
+        torch_pc = torch.from_numpy(self.pc).unsqueeze(0).to(self.pc.device)
         out_nn = knn_points(torch_pc, torch_pc, K=self.K)
         nn_dist, nn_ind = out_nn[0][0], out_nn[1][0]
 
-        # visualize_points3D(self.pc, np.arange(self.pc.shape[0]))
+
         visibility_aware_KNN = self.strip_KNN_with_vis(self.pc, nn_ind)
 
         return visibility_aware_KNN
 
 
-from data.PATHS import DATA_PATH
-argo_data = np.load(DATA_PATH + '/argoverse/val/7d37fc6b-1028-3f6f-b980-adb5fa73021e/315968385323560000_315968385423756000.npz')
-argo_pc1 = argo_data['pc1']
-# todo try it on argo data
+# from data.PATHS import DATA_PATH
+# argo_data = np.load(DATA_PATH + '/argoverse/val/7d37fc6b-1028-3f6f-b980-adb5fa73021e/315968385323560000_315968385423756000.npz')
+# argo_pc1 = argo_data['pc1']
 
 
+# pitch = np.arcsin(argo_pc1[:, 2] / (np.linalg.norm(argo_pc1[:,:3], axis=1) + 1e-8))
 
-pitch = np.arcsin(argo_pc1[:, 2] / (np.linalg.norm(argo_pc1[:,:3], axis=1) + 1e-8))
-#          sensor_name        qw        qx        qy        qz      tx_m      ty_m      tz_m
-# 9             up_lidar  0.999996  0.000000  0.000000 -0.002848  1.350180  0.000000  1.640420
-# 10          down_lidar -0.000089 -0.994497  0.104767  0.000243  1.355162  0.000133  1.565252
 
-from plyfile import PlyData, PlyElement
-plydata = PlyData.read('toy_samples/argo_sample.ply')
-argo_xyz = plydata.elements[0].data
-argo = np.stack((argo_xyz['x'], argo_xyz['y'], argo_xyz['z']), axis=1)
-rad_argo = np.linalg.norm(argo[:,:3], axis=1) < 35
-
-visualize_points3D(argo_pc1, pitch)
-visualize_points3D(argo[rad_argo], argo[rad_argo,2] > 0.1)
-
-rad_pc1 = np.linalg.norm(pc1[:,:3], axis=1) < 35
-visualize_points3D(pc1[rad_pc1], pc1[rad_pc1,2] > -1.4)
+# from plyfile import PlyData, PlyElement
+# plydata = PlyData.read('toy_samples/argo_sample.ply')
+# argo_xyz = plydata.elements[0].data
+# argo = np.stack((argo_xyz['x'], argo_xyz['y'], argo_xyz['z']), axis=1)
+# rad_argo = np.linalg.norm(argo[:,:3], axis=1) < 35
+#
+# visualize_points3D(argo_pc1, pitch)
+# visualize_points3D(argo[rad_argo], argo[rad_argo,2] > 0.1)
+#
+# rad_pc1 = np.linalg.norm(pc1[:,:3], axis=1) < 35
+# visualize_points3D(pc1[rad_pc1], pc1[rad_pc1,2] > -1.4)
 
 
 # Vis_Depth = VisibilityDepth(pc1[:,:3], K=16)

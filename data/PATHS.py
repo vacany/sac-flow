@@ -8,14 +8,14 @@ DATA_PATH = f"{os.path.expanduser('~')}/data/"
 if server_name.startswith("Pat"):
     KITTI_SF_PATH = f"{os.path.expanduser('~')}/rci/data/kitti_sf/"
 
-
-elif server_name.startswith('g') or server_name.startswith("login"):
-    KITTI_SF_PATH = f"{os.path.expanduser('~')}/data/kitti_sf/"
+# elif server_name.startswith('g') or server_name.startswith("login"):
 
 elif server_name.startswith("boruvka"):
     KITTI_SF_PATH = f"{os.path.expanduser('~')}/data/kitti_sf/"
+    TMP_VIS_PATH = f"{os.path.expanduser('~')}/pcflow/toy_samples/tmp_vis/"
+    EXP_PATH = f"{os.path.expanduser('~')}/experiments/"
 
-
+    # todo, create bash structure
 
 
 

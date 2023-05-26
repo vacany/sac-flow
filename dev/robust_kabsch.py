@@ -104,21 +104,7 @@ class DT_loss(torch.nn.Module):
 
 
 
-class FlowSmoothLoss(torch.nn.Module):
 
-    def __init__(self, pc, K=12, max_radius=1, loss_norm=1):
-        super().__init__()
-        self.K = K
-        self.max_radius = max_radius
-        self.pc = pc
-        self.loss_norm = loss_norm
-
-        self.dist, self.nn_ind, _ = knn_points(self.pc, self.pc, K=self.K)
-        tmp_idx = self.nn_ind[:, :, 0].unsqueeze(2).repeat(1, 1, K).to(self.nn_ind.device)
-        self.nn_ind[self.dist > max_radius] = tmp_idx[self.dist > max_radius]
-
-    def forward(self, pred_flow):
-        return smoothness_loss(pred_flow, self.nn_ind, loss_norm=self.loss_norm)
 def find_robust_weighted_rigid_alignment(A, B, weights, use_epsilon_on_weights=False):
     """
     Calculates the weighted rigid transformation that aligns two sets of points.
@@ -261,7 +247,7 @@ if __name__ == "__main__":
     for e_flow in range(1000):
         dt_chamf, dt_chamf_per_point = DT_chamf_loss(pc1, pred_flow)
         # TMP CHANGE
-        dt_chamf = dt_chamf_per_point[dt_chamf_per_point <= 2.].mean()
+        dt_chamf = dt_chamf_per_point[dt_chamf_per_point <= 1.5].mean()
         flow_smooth = Flow_smooth_loss(pred_flow)[0]
         loss = dt_chamf + 10 * flow_smooth + 0.01 * pred_flow[..., 2].norm()
 
@@ -347,9 +333,9 @@ if __name__ == "__main__":
 
         print(f"Iter: {e:03d} \t Loss: {loss.mean().item():.4f} \t RMSD: {rmsd.mean().item():.4f} \t Smoothness: {smooth_loss.mean().item():.4f} \t Kabsch_w: {kabsch_w.mean().item():.4f} \t Pseudo_rigid_flow: {pseudo_rigid_flow.item():.4f}")
 
-    # bash script baseline, metric
-    # todo visibility, init flow, instance, then jointly IS, ego-motion, flow, visibility
-
+    # bash script baseline, metric ... see
+    # TODO FIRST: Metrics, run experiments with baseline and this with bash script
+    # TODO implement visibility to flow smoothness loss class
 
 
     # rmsd_pc1 = torch.cat([pc1, rmsd.unsqueeze(2)], dim=2)

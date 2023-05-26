@@ -4,7 +4,7 @@ import sys
 from pytorch3d.ops.knn import knn_points
 from pytorch3d.ops.points_normals import estimate_pointcloud_normals
 
-from .visibility import KNN_visibility_solver, substitute_NN_by_mask
+from .visibility import KNN_visibility_solver, substitute_NN_by_mask, strip_KNN_with_vis
 
 def KNN_with_normals(pc1, normals1=None, K=3, normals_K=3):
 
@@ -129,18 +129,57 @@ def visibility_aware_smoothness_loss(est_flow, KNN_image_indices, depth, NN_idx,
 
 
 
-
-class SSFlowLoss(torch.nn.Module):
-
-    def __init__(self, **kwargs):
+class FlowSmoothLoss(torch.nn.Module):
+    # use normals to calculate smoothness loss
+    def __init__(self, pc, K=12, weight=1., max_radius=1, loss_norm=1):
         super().__init__()
+        self.K = K
+        self.max_radius = max_radius
+        self.pc = pc
+        self.loss_norm = loss_norm
+        self.weight = weight
 
-    def forward(self, pc1, pc2, est_flow):
-        pass
+        self.dist, self.nn_ind, _ = knn_points(self.pc, self.pc, K=self.K)
+        tmp_idx = self.nn_ind[:, :, 0].unsqueeze(2).repeat(1, 1, K).to(self.nn_ind.device)
+        self.nn_ind[self.dist > max_radius] = tmp_idx[self.dist > max_radius]
+
+    def forward(self, pred_flow):
+
+        smooth_loss, per_point_smooth_loss = smoothness_loss(pred_flow, self.nn_ind, loss_norm=self.loss_norm)
+
+        return smooth_loss * self.weight, per_point_smooth_loss * self.weight
+
+class VisibilitySmoothnessLoss(torch.nn.Module):
+    # Maybe inheritance next time?
+    def __init__(self, pc, K, VOF, HOF, max_radius=1.5, margin=3, loss_norm=1):
+        super(VisibilitySmoothnessLoss, self).__init__()
+        self.margin = margin
+        self.pc = pc
+        self.K = K
+        self.VOF = VOF
+        self.HOV = HOF
+        self.max_radius = max_radius
+        self.margin = margin
+        self.loss_norm = loss_norm
+
+
+        self.dist, self.nn_ind, _ = knn_points(self.pc, self.pc, K=K)
+
+        self.nn_ind = strip_KNN_with_vis(self.pc[0], self.nn_ind[0], self.VOF, self.HOV, margin=self.margin).unsqueeze(0)
+        # apply radius
+        tmp_idx = self.nn_ind[:, :, 0].unsqueeze(2).repeat(1, 1, K).to(self.nn_ind.device)
+        self.nn_ind[self.dist > max_radius] = tmp_idx[self.dist > max_radius]
+
+    def forward(self, pred_flow):
+
+        smooth_loss, per_point_smooth_loss = smoothness_loss(pred_flow, self.nn_ind, loss_norm=self.loss_norm)
+
+        return smooth_loss, per_point_smooth_loss
 
 if __name__ == "__main__":
     x = torch.rand(1, 120, 3, requires_grad=True)
     y = torch.rand(1, 100, 3, requires_grad=True)
+
 
 
     x_lengths = torch.ones(len(x), dtype=torch.long) * x.shape[1]

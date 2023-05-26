@@ -7,6 +7,39 @@ from tqdm import tqdm
 
 from pytorch3d.ops.knn import knn_points
 
+def calculate_polar_coords(pc):
+
+    calc_depth = np.linalg.norm(pc[:,:3], axis=1)
+    yaw = -np.arctan2(pc[:, 1], pc[:, 0])
+    pitch = np.arcsin(pc[:, 2] / (calc_depth + 1e-8))
+
+    return yaw, pitch, calc_depth
+
+def get_range_img_coords(pc, VOF, HOF, ):
+
+    yaw, pitch, calc_depth = calculate_polar_coords(pc)
+
+    # to rads
+    fov = VOF * np.pi / 180.0
+
+    fov_down = fov / 2
+
+    # get projections in image coords
+    proj_x = 0.5 * (yaw / np.pi + 1.0)          # in [0.0, 1.0]
+    # proj_y = 1.0 - (pitch + abs(fov_down)) / fov        # in [0.0, 1.0]
+    proj_y = 1.0 - (pitch + abs(fov_down)) / fov        # in [0.0, 1.0]
+
+    # scale to image size using angular resolution
+    proj_x *= HOF                              # in [0.0, W]
+    proj_y *= VOF                              # in [0.0, H]
+
+    u, v = np.floor(proj_x).astype(int), np.floor(proj_y).astype(int)
+
+    # print(np.unique(proj_y))
+    depth_image = - np.ones((HOF, VOF))
+    depth_image[u, v] = calc_depth
+
+    return u, v, depth_image
 
 
 # substitune NN
@@ -73,5 +106,40 @@ def KNN_visibility_solver(KNN_image_indices, depth, margin=0.05):
 
     return valid_KNN
 
+def KNN_coords(pc, nn_ind, VOF, HOF):
+    '''
+    :param pc2: point cloud to strip as Nx3
+    :param nn_ind: KNN indices as NxK
+    :return: Coordinates of KNN in depth image as NxKx2
+    '''
+    H_coords, V_coords, depth_image = get_range_img_coords(pc.detach().cpu().numpy(), VOF, HOF)
 
+    # plt.imshow(self.depth)
+    # plt.savefig('toy_samples/depth.png')
+
+    image_indices = np.stack((V_coords, H_coords)).T
+    image_indices = torch.from_numpy(image_indices).to(pc.device)
+
+    KNN_image_indices = image_indices[nn_ind]
+
+    return KNN_image_indices
+
+def strip_KNN_with_vis(pc, nn_ind, VOF, HOF, margin=3):
+    '''
+    :param pc2: point cloud to strip as Nx3
+    :param nn_ind: KNN indices as NxK
+    :return: visibility aware KNN indices as NxK (stripped KNNs)
+    '''
+
+    _,_, depth = get_range_img_coords(pc.detach().cpu().numpy(), VOF, HOF)
+
+    KNN_image_indices = KNN_coords(pc, nn_ind, VOF, HOF)
+
+    depth = torch.from_numpy(depth).to(pc.device)
+
+    valid_KNN = KNN_visibility_solver(KNN_image_indices, depth.T, margin=margin)
+
+    visibility_aware_KNN = substitute_NN_by_mask(nn_ind, valid_KNN)
+
+    return visibility_aware_KNN
 

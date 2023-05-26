@@ -111,8 +111,18 @@ if socket.gethostname().startswith("Pat"):
         # valid_flow = frame_flow[:, 3] == 1
         # vis_flow = frame_flow[valid_flow]
         # threshold for dynamic is flow larger than 0.05 m
+
+        if len(pts1.shape) == 3:
+            pts1 = pts1[0]
+
+        if len(pts2.shape) == 3:
+            pts2 = pts2[0]
+
+        if len(frame_flow.shape) == 3:
+            frame_flow = frame_flow[0]
+
         if type(pts1) is not np.ndarray:
-            points = pts1.detach().cpu().numpy()
+            pts1 = pts1.detach().cpu().numpy()
 
         if type(pts2) is not np.ndarray:
             pts2 = pts2.detach().cpu().numpy()
@@ -153,9 +163,15 @@ if socket.gethostname().startswith("Pat"):
         vis_p_i = p_i @ trans_mat.T
         visualize_multiple_pcls(*[p_i, vis_p_i, p_j])
 
-# todo create server decorator to store the files as it goes
+
 else:
     def visualize_points3D(points, labels=None, **kwargs):
+        if type(points) is not np.ndarray:
+            points = points.detach().cpu().numpy()
+
+        if type(labels) is not np.ndarray and labels is not None:
+            labels = labels.detach().cpu().numpy()
+
         folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
         file = f'{time.time()}_cur.npz'
 
@@ -166,6 +182,15 @@ else:
 
 
     def visualize_flow3d(pts1, pts2, frame_flow):
+
+        if type(pts1) is not np.ndarray:
+            pts1 = pts1.detach().cpu().numpy()
+
+        if type(pts2) is not np.ndarray:
+            pts2 = pts2.detach().cpu().numpy()
+
+        if type(frame_flow) is not np.ndarray:
+            frame_flow = frame_flow.detach().cpu().numpy()
 
         folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
         file = f'{time.time()}_cur.npz'
@@ -179,12 +204,15 @@ else:
     def visualize_plane_with_points(points, n_vector, d):
         pass
     def visualize_multiple_pcls(*args, **kwargs):
+
+
         folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
         file = f'{time.time()}_cur.npz'
 
         command = 'visualize_multiple_pcls'
 
-        # pcs = [a.detach().cpu().numpy() for a in args]
+        pcs = [a.detach().cpu().numpy() for a in args if type(a) is not np.ndarray]
+
         np.savez(folder_path + '/' + file, args=args, command=command, **kwargs)
 
 
@@ -296,27 +324,48 @@ if __name__ == "__main__":
     # command = 'visualize_points3D'
     # print(getattr(sys.modules[__name__], command))
 
+    # Clean tmp folder before starting
+    files = glob.glob(tmp_folder + '/*.npz') + glob.glob(tmp_folder + '/*.png')
+
+    for file in files:
+        os.remove(file)
+
+    print('waiting for files in folder ', tmp_folder, ' ...')
+
+
     while True:
         time.sleep(0.2)
-        print('waiting for files in folder ', tmp_folder, ' ...')
-        files = glob.glob(tmp_folder + '/*.npz')
 
-        print(os.stat(tmp_folder).st_mtime)
+        files = glob.glob(tmp_folder + '/*.npz') + glob.glob(tmp_folder + '/*.png')
+
+        _ = os.stat(tmp_folder).st_mtime    # to refresh the cache
+
         if len(files) > 0:
 
             for file in files:
                 print('Loading file: ', file)
 
-                data = np.load(file, allow_pickle=True)
-                command = data['command'].item()
+                if file.endswith('.npz'):
+                    data = np.load(file, allow_pickle=True)
+                    command = data['command'].item()
 
-                kwargs = {name: data[name] for name in data.files if name not in ['command']}
+                    kwargs = {name: data[name] for name in data.files if name not in ['command']}
 
-                if 'multiple' in command:
-                    pcs = [data['args'][i] for i in range(len(data['args']))]
-                    visualize_multiple_pcls(*pcs)
+                    if 'multiple' in command:
+                        pcs = [data['args'][i] for i in range(len(data['args']))]
+                        visualize_multiple_pcls(*pcs)
+                    else:
+                        getattr(sys.modules[__name__], command)(**kwargs)
+
+                elif file.endswith('.png'):
+                    from PIL import Image
+                    img = Image.open(file)
+                    img.show()
+
+
+
                 else:
-                    getattr(sys.modules[__name__], command)(**kwargs)
+                    raise ValueError('Unknown file type: ', file)
 
                 os.remove(file)
 
