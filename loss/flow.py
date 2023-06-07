@@ -128,7 +128,6 @@ def visibility_aware_smoothness_loss(est_flow, KNN_image_indices, depth, NN_idx,
         return smooth_flow_per_point
 
 
-
 class FlowSmoothLoss(torch.nn.Module):
     # use normals to calculate smoothness loss
     def __init__(self, pc, K=12, weight=1., max_radius=1, loss_norm=1):
@@ -175,6 +174,48 @@ class VisibilitySmoothnessLoss(torch.nn.Module):
         smooth_loss, per_point_smooth_loss = smoothness_loss(pred_flow, self.nn_ind, loss_norm=self.loss_norm)
 
         return smooth_loss, per_point_smooth_loss
+
+# class loss, weights 0 means if applied at all and rest values are weights
+class UnsupervisedFlowLosses(torch.nn.Module):
+
+    def __init__(self, args):
+        super().__init__()
+        self.args = args
+
+
+        # store outputs of losses if better?
+        self.current_loss = 10000
+
+        # init losses
+        self.loss_functions = []
+
+        # Smoothness
+        # todo add normals []
+        if args.loss_smooth_weight > 0:
+            Smooth_loss = FlowSmoothLoss(args.pc, K=args.loss_smooth_K, weight=args.loss_smooth_weight,
+                           max_radius=args.loss_smooth_max_radius, loss_norm=args.loss_smooth_norm)
+
+            self.loss_functions.append(Smooth_loss)
+
+        # Visibility
+        if args.loss_vis_weight > 0:
+            Vis_loss = VisibilitySmoothnessLoss(args.pc, K=args.loss_vis_K, VOF=args.VOF, HOF=args.HOF,
+                                                max_radius=args.loss_vis_max_radius, margin=args.loss_vis_margin,
+                                                loss_norm=args.loss_vis_norm)
+            self.loss_functions.append(Vis_loss)
+
+        # DT loss instead of chamfer
+        # maybe throw sanity check if chamfer is not used?
+        # todo return dict
+
+        # Chamfer
+        # todo define chamf layer, with reverse []
+        if args.loss_chamfer_weight > 0:
+            self.loss_functions.append(chamfer_distance_loss)
+
+        # todo ForwardFlow []
+
+        # todo push flow from freespace []
 
 if __name__ == "__main__":
     x = torch.rand(1, 120, 3, requires_grad=True)

@@ -334,7 +334,7 @@ if __name__ == "__main__":
 
 
     while True:
-        time.sleep(0.2)
+        time.sleep(0.4)
 
         files = glob.glob(tmp_folder + '/*.npz') + glob.glob(tmp_folder + '/*.png')
 
@@ -344,6 +344,7 @@ if __name__ == "__main__":
 
             for file in files:
                 print('Loading file: ', file)
+
 
                 if file.endswith('.npz'):
                     data = np.load(file, allow_pickle=True)

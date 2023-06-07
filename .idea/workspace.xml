@@ -53,16 +53,16 @@
     <option name="showLibraryContents" value="true" />
     <option name="showMembers" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_ADD_EXTERNAL_FILES": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "database.data.extractors.current.export.id": "Comma-separated (CSV)_id",
-    "last_opened_file_path": "/home/patrik/pcflow/dev",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;database.data.extractors.current.export.id&quot;: &quot;Comma-separated (CSV)_id&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/patrik/pcflow/dev&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/dev" />
@@ -275,7 +275,12 @@
       <workItem from="1685028207172" duration="2832000" />
       <workItem from="1685034566844" duration="4963000" />
       <workItem from="1685039542862" duration="2998000" />
-      <workItem from="1685085792621" duration="3915000" />
+      <workItem from="1685085792621" duration="11024000" />
+      <workItem from="1685111532025" duration="4772000" />
+      <workItem from="1685116472012" duration="75000" />
+      <workItem from="1685200291499" duration="793000" />
+      <workItem from="1686036896880" duration="17442000" />
+      <workItem from="1686129083316" duration="7163000" />
     </task>
     <servers />
   </component>

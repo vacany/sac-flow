@@ -56,3 +56,11 @@
 # Visibility
     - should be rigid transformation?
     - Go by yaw and pitch and keep instance until divided by huge depth
+
+- continue with exp?
+- new vis with dbscan? better interpretable
+  - can be also done with KNN (one instace = one KNN)
+- iterable parameters inside model?
+- 
+# Valeo
+    - show normals estimate and intensity
