@@ -213,7 +213,7 @@ else:
 
         pcs = [a.detach().cpu().numpy() for a in args if type(a) is not np.ndarray]
 
-        np.savez(folder_path + '/' + file, args=args, command=command, **kwargs)
+        np.savez(folder_path + '/' + file, args=pcs, command=command, **kwargs)
 
 
     def show_image(image, title=None):
@@ -334,7 +334,7 @@ if __name__ == "__main__":
 
 
     while True:
-        time.sleep(0.4)
+        time.sleep(0.8)
 
         files = glob.glob(tmp_folder + '/*.npz') + glob.glob(tmp_folder + '/*.png')
 

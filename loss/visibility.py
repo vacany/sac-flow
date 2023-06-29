@@ -4,8 +4,7 @@ import torch
 from tqdm import tqdm
 
 
-
-from pytorch3d.ops.knn import knn_points
+# from pytorch3d.ops.knn import knn_points
 
 def calculate_polar_coords(pc):
 
