@@ -148,7 +148,7 @@ if socket.gethostname().startswith("Pat"):
 
         all_rays = np.concatenate(all_rays)
 
-        visualize_multiple_pcls(*[pts1, all_rays, pts2], point_size=0.02)
+        visualize_multiple_pcls(*[pts1, all_rays, pts2], point_size=0.02, lookat=[0,0,0])
 
     def visualizer_transform(p_i, p_j, trans_mat):
         '''

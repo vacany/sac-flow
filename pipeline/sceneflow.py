@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from data.PATHS import DATA_PATH, TMP_VIS_PATH, EXP_PATH
 
-from loss.flow import UnsupervisedFlowLosses
+from loss.flow import LossModule
 from ops.metric import scene_flow_metrics
 from models.FastNSF.optimization import Neural_Prior, Timers, EarlyStopping, init_weights
 
@@ -63,9 +63,11 @@ def build_dataloader(args):
     from data.NSF_data import NSF_dataset
     dataset = NSF_dataset(dataset_type=args.dataset)
 
-    return dataset
+    for add_arg in ['lidar_pose', 'fov_up', 'fov_down', 'proj_H', 'proj_W']:
+        setattr(args, add_arg, dataset.data_config[add_arg])
 
-# def init?
+    return dataset, args
+
 def build_model(args):
 
     net = Neural_Prior()
@@ -74,7 +76,9 @@ def build_model(args):
 
 def build_loss(args):
 
-    Loss_Function = UnsupervisedFlowLosses(args)
+    kwargs = vars(args)
+
+    Loss_Function = LossModule(**kwargs)
 
     return Loss_Function
 
@@ -85,7 +89,7 @@ def solver(
         pc2: torch.Tensor,
         gt_flow: torch.Tensor,
         net: nn.Module,
-        Loss_Function: UnsupervisedFlowLosses,
+        Loss_Function: LossModule,
         args: argparse.Namespace,
 ):
 
@@ -147,8 +151,8 @@ def solver(
         pc1_deformed = pc1 + flow_pred_1
 
         # loss = dt.torch_bilinear_distance(pc1_deformed.squeeze(0)).mean()
-        loss_dict = Loss_Function(pc1, pc2, flow_pred_1)
-        loss = loss_dict['loss']
+        loss = Loss_Function(pc1, flow_pred_1, pc2) # this is loss
+        # loss = loss_dict['loss']
 
         net_backward_st = time.time()
         loss.backward()
@@ -191,7 +195,7 @@ def solver(
     info_dict = {
         'final_flow': best_flow_1,
         'loss': best_loss_1,
-        'loss_dict' : loss_dict,
+        # 'loss_dict' : loss_dic,
         'EPE3D_1': best_epe3d_1,
         'acc3d_strict_1': best_acc3d_strict_1,
         'acc3d_relax_1': best_acc3d_relax_1,
@@ -218,15 +222,14 @@ def solver(
 class SceneFlowSolver():
 
     def __init__(self, args):
-        self.args = args
+
         self.device = f'cuda:{args.gpu}'
 
-        self.dataloader = build_dataloader(args)
+        self.dataloader, args = build_dataloader(args)
         # This can be done in a better way perhaps?
         self.model = build_model(args)
         self.model.to(self.device)
         self.Loss_Function = build_loss(args)
-
 
 
         name = datetime.datetime.utcnow().isoformat(sep='-', timespec='milliseconds')
@@ -236,6 +239,9 @@ class SceneFlowSolver():
         # self.exp_uuid = uuid.uuid4().hex
         self.exp_dir = EXP_PATH + args.exp_name + '/' + name
         os.makedirs(self.exp_dir, exist_ok=True)
+
+        args.exp_dir = self.exp_dir
+        self.args = args
 
     def optimize_sceneflow(self):
 
@@ -252,7 +258,7 @@ class SceneFlowSolver():
             pc2 = pc2.to(self.device)
             gt_flow = gt_flow.to(self.device)
 
-            # Benchmark area, nsf is not doing that, but still baseline exp is done consistently with others
+            # Benchmark area, nsf is not doing that, but still baseline exp is done consistently with others, nsf also perform worse here for some reason
             radius_mask = pc1.norm(dim=-1) < self.args.max_range
             radius_mask2 = pc2.norm(dim=-1) < self.args.max_range
 
@@ -268,8 +274,6 @@ class SceneFlowSolver():
 
             pred_flow = pred_dict['final_flow']
 
-
-            # EPE3D, acc3d_strict, acc3d_relax, outlier, angle_error = scene_flow_metrics(gt_flow, )
 
             store_dict = {'loss' : pred_dict['loss'],
                           'EPE3D' : pred_dict['EPE3D_1'],
@@ -353,28 +357,26 @@ if __name__ == '__main__':
 
     ### LOSS
     # weights
-    parser.add_argument('--l_ch', type=float, nargs='+', default=1.) #?
-    parser.add_argument('--l_ff', type=float, nargs='+', default=1)  # ?
-    parser.add_argument('--l_dt', type=float, nargs='+', default=0)  # ?
-    parser.add_argument('--l_sm', type=float, nargs='+', default=1)  # ?
-    parser.add_argument('--l_vsm', type=float, nargs='+', default=0)  # ?
-    # parser.add_argument('--loss_chamfer_use_visibility', type=bool, default=1) # Freespace?
+    parser.add_argument('--nn_weight', type=float, nargs='+', default=1., help='Chamfer distance loss weight') #?
+    parser.add_argument('--smooth_weight', type=float, nargs='+', default=0)  # ?
+    parser.add_argument('--forward_weight', type=float, nargs='+', default=0)  # ?
+    parser.add_argument('--free_weight', type=float, nargs='+', default=0)  # ?
+    parser.add_argument('--VA', type=float, nargs='+', default=0)  # ?
 
 
     # KNN
-    parser.add_argument('--normals_K', type=int, nargs='+', default=4)  # ?
-    parser.add_argument('--KNN_max_radius', type=float, nargs='+', default=1.5)  # ?
+    parser.add_argument('--K', type=int, nargs='+', default=4)  # ?
+    parser.add_argument('--sm_normals_K', type=int, nargs='+', default=0)  # ?
+    parser.add_argument('--max_radius', type=float, nargs='+', default=1.5)  # is for chamfer as well!
     parser.add_argument('--smooth_K', type=int, nargs='+', default=4)
-    parser.add_argument('--pc2_smoothness', type=int, nargs='+', default=0)
-    # pcsmoothness weight instead
-    # NN dist
-    parser.add_argument('--l_ch_bothways', type=bool, nargs='+', default=1)  # ?
-    parser.add_argument('--l_dt_gridfactor', type=int, nargs='+', default=10) #?
+    parser.add_argument('--pc2_smooth', type=bool, nargs='+', default=False)
 
-    # Smoothness
-    # Visibility-aware smoothness
-    # Forward flow smoothness
+    # Chamfer
+    parser.add_argument('--both_ways', type=bool, nargs='+', default=True)  # ?
+    parser.add_argument('--ch_normals_K', type=int, nargs='+', default=0)  # ?
 
+
+    # parser.add_argument('--l_dt_gridfactor', type=int, nargs='+', default=10) #?
 
     ### Hyperparameters
     parser.add_argument('--lr', type=float, nargs='+', default=0.008, help='learning rate') #?
@@ -382,21 +384,29 @@ if __name__ == '__main__':
     parser.add_argument('--early_patience', type=int, nargs='+', default=10, help='when to consider convergence') #?
     parser.add_argument('--early_min_delta', type=float, nargs='+', default=0.001, help='convergence difference') #?
 
-    ### Purpose
-    parser.add_argument('--use_case', type=str, default='local minima', help='what problems and use-cases it should solve')  # ?
-    parser.add_argument('--expectation', type=str, default='beat baseline', help='what do you expect from the experiment')  # ?
-    parser.add_argument('--hypothesis', type=str, default='beat baseline', help='what should happen and why it should be better')  # ?
+    # 'fov_up': fov_up,
+    # 'fov_down': fov_down,
+    # 'proj_H': proj_H,
+    # 'proj_W': proj_W,
+
+
+
+
+
 
     args = parser.parse_args()
 
+    # config
     # different args for 8192 and full point cloud ...
 
     # maybe in the class experiment?
+    # dataset, new_args = build_dataloader(args)
+
     argument_list = preprocess_args(args)
-
+    #
     for run in range(args.runs):
-
+    #
         for args in argument_list:  # drop this for now?
-
+    #
             Experiment = SceneFlowSolver(args)
             Experiment.optimize_sceneflow()

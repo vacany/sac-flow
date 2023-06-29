@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from pytorch3d.ops.knn import knn_points
 from pytorch3d.ops.points_normals import estimate_pointcloud_normals
 
+from data.range_image import range_image_coords, create_depth_img
 # import FastGeodis
 
 from .visibility import KNN_visibility_solver, substitute_NN_by_mask, strip_KNN_with_vis
@@ -35,7 +36,7 @@ def chamfer_distance_loss(x, y, x_lengths=None, y_lengths=None, both_ways=False,
     if both_ways:
         y_nn = knn_points(y, x, lengths1=y_lengths, lengths2=x_lengths, K=1, norm=loss_norm)
         cham_y = y_nn.dists[..., 0]  # (N, P2)
-        y_nearest_to_x = y_nn[1]
+        # y_nearest_to_x = y_nn[1]
 
         nn_loss = (cham_x.mean() + cham_y.mean() ) / 2 # different shapes
 
@@ -117,18 +118,9 @@ class DT:
 
         return dist.mean(), dist
 
-# def rigid_cycle_loss(p_i, fw_trans, bw_trans, reduction='none'):
-#
-#     trans_p_i = torch.cat((p_i, torch.ones((len(p_i), p_i.shape[1], 1), device=p_i.device)), dim=2)
-#     bw_fw_trans = bw_trans @ fw_trans - torch.eye(4, device=fw_trans.device)
-#     # todo check this in visualization, if the points are transformed as in numpy
-#     res_trans = torch.matmul(bw_fw_trans, trans_p_i.permute(0, 2, 1)).norm(dim=1)
-#
-#     rigid_loss = res_trans.mean()
-#
-#     return rigid_loss
 
-def smoothness_loss(est_flow, NN_idx, loss_norm=1, mask=None):
+
+def _smoothness_loss(est_flow, NN_idx, loss_norm=1, mask=None):
 
     bs, n, c = est_flow.shape
 
@@ -148,21 +140,7 @@ def smoothness_loss(est_flow, NN_idx, loss_norm=1, mask=None):
 
     return smooth_flow_loss, smooth_flow_per_point
 
-def visibility_aware_smoothness_loss(est_flow, KNN_image_indices, depth, NN_idx, margin=5, loss_norm=1, reduction='mean'):
 
-    valid_KNN_mask = KNN_visibility_solver(KNN_image_indices, depth, margin=margin)
-    vis_aware_KNN = substitute_NN_by_mask(NN_idx, valid_KNN_mask)
-
-    smooth_flow_loss, smooth_flow_per_point = smoothness_loss(est_flow, vis_aware_KNN, loss_norm=loss_norm)
-
-    if reduction == 'mean':
-        return smooth_flow_loss
-
-    elif reduction == 'sum':
-        return smooth_flow_per_point.sum()
-
-    else:
-        return smooth_flow_per_point
 
 def mask_NN_by_dist(dist, nn_ind, max_radius):
     # todo refactor to loss utils
@@ -170,7 +148,7 @@ def mask_NN_by_dist(dist, nn_ind, max_radius):
     nn_ind[dist > max_radius] = tmp_idx[dist > max_radius]
 
     return nn_ind
-def forward_flow_loss(pc1, pc2, est_flow):
+def _forward_flow_loss(pc1, pc2, est_flow):
     ''' not yet for K > 1 or BS > 1
     Smooth flow on same NN from pc2 '''
     _, forward_nn, _ = knn_points(pc1 + est_flow, pc2, lengths1=None, lengths2=None, K=1, norm=1)
@@ -198,7 +176,7 @@ def forward_flow_loss(pc1, pc2, est_flow):
     return forward_loss.mean(), forward_loss[:est_flow.shape[1]]
 
 
-def forward_smoothness(pc1, pc2, est_flow, NN_pc2=None, K=2, include_pc2_smoothness=True):
+def _forward_smoothness(pc1, pc2, est_flow, NN_pc2=None, K=2, include_pc2_smoothness=True):
 
     if NN_pc2 is None and include_pc2_smoothness:
         # Compute NN_pc2
@@ -255,155 +233,347 @@ def forward_smoothness(pc1, pc2, est_flow, NN_pc2=None, K=2, include_pc2_smoothn
 
     return forward_flow_loss.mean(), forward_flow_loss, NN_pc2_loss
 
-# class FlowSmoothLoss(torch.nn.Module):
+
+
+
+
+class SmoothnessLoss(torch.nn.Module):
+
 #     # use normals to calculate smoothness loss
-#     def __init__(self, pc, K=12, weight=1., max_radius=1, loss_norm=1):
-#         super().__init__()
-#         self.K = K
-#         self.max_radius = max_radius
-#         self.pc = pc
-#         self.loss_norm = loss_norm
-#         self.weight = weight
-#
-#         self.dist, self.nn_ind, _ = knn_points(self.pc, self.pc, K=self.K)
-#         tmp_idx = self.nn_ind[:, :, 0].unsqueeze(2).repeat(1, 1, K).to(self.nn_ind.device)
-#         self.nn_ind[self.dist > max_radius] = tmp_idx[self.dist > max_radius]
-#
-#     def forward(self, pred_flow):
-#
-#         smooth_loss, per_point_smooth_loss = smoothness_loss(pred_flow, self.nn_ind, loss_norm=self.loss_norm)
-#
-#         return smooth_loss * self.weight, per_point_smooth_loss * self.weight
+    def __init__(self, pc1, pc2=None, K=12, sm_normals_K=0, smooth_weight=1., VA=False, max_radius=2, loss_norm=1, forward_weight=0., pc2_smooth=False, **kwargs):
 
-class VisibilitySmoothnessLoss(torch.nn.Module):
-    # Maybe inheritance next time?
-    def __init__(self, pc, K, VOF, HOF, max_radius=1.5, margin=3, loss_norm=1):
-        super(VisibilitySmoothnessLoss, self).__init__()
-        self.margin = margin
-        self.pc = pc
-        self.K = K
-        self.VOF = VOF
-        self.HOV = HOF
-        self.max_radius = max_radius
-        self.margin = margin
-        self.loss_norm = loss_norm
-
-
-        self.dist, self.nn_ind, _ = knn_points(self.pc, self.pc, K=K)
-
-        self.nn_ind = strip_KNN_with_vis(self.pc[0], self.nn_ind[0], self.VOF, self.HOV, margin=self.margin).unsqueeze(0)
-        # apply radius
-        tmp_idx = self.nn_ind[:, :, 0].unsqueeze(2).repeat(1, 1, K).to(self.nn_ind.device)
-        self.nn_ind[self.dist > max_radius] = tmp_idx[self.dist > max_radius]
-
-    def forward(self, pred_flow):
-
-        smooth_loss, per_point_smooth_loss = smoothness_loss(pred_flow, self.nn_ind, loss_norm=self.loss_norm)
-
-        return smooth_loss, per_point_smooth_loss
-
-# class loss, weights 0 means if applied at all and rest values are weights
-
-# separate smoothness, chamfer
-class UnsupervisedFlowLosses(torch.nn.Module):
-    # update samples
-    def __init__(self, args : argparse.Namespace):
         super().__init__()
-        self.args = args
+        self.K = K
+        self.max_radius = max_radius
+        self.pc1 = pc1
+        self.pc2 = pc2
+        self.normals_K = sm_normals_K
+        self.loss_norm = loss_norm
+        self.smooth_weight = smooth_weight
 
-        # store outputs of losses if better?
-        self.current_loss = 10000
+        # normal Smoothness
+        if self.normals_K > 3:
+            self.dist1, self.NN_pc1, _ = self.KNN_with_normals(pc1)
+        else:
+            self.dist1, self.NN_pc1, _ = knn_points(self.pc1, self.pc1, K=self.K)
 
-        # init losses
-        self.loss_functions = []
+        self.NN_pc1 = mask_NN_by_dist(self.dist1, self.NN_pc1, max_radius)
 
-        # vertical and horizontal field of view
-        self.VOF, self.HOF = 64, 1028
 
-        # kostka pro vyber NN / okoli - pondelimozna
+        # vis-aware - jenom skrtam, muze byt po radiusu
+        self.VA = VA
+        if VA:
+            # todo
+            # self.nn_ind = strip_KNN_with_vis(self.pc[0], self.nn_ind[0], self.VOF, self.HOV,
+            #                                  margin=self.margin).unsqueeze(0)
+            pass
+        # ff
+        self.forward_weight = forward_weight
 
-    # todo rewrite parameters
-    def update(self, pc1, pc2):
-        args = self.args
-
-        self.NN_pc1 = None
+        # ff with NNpc2
+        self.pc2_smooth = pc2_smooth
         self.NN_pc2 = None
 
-        if args.l_dt > 0:
-            self.dt = DT(pc1, pc2, grid_factor=10)
+        if pc2_smooth:
 
-        if args.normals_K >= 3:
-            normals1 = estimate_pointcloud_normals(pc1, neighborhood_size=args.normals_K)
-            pc_with_norms = torch.cat([pc1, normals1], dim=-1)
+            if self.normals_K > 3:
+                self.dist2, self.NN_pc2, _ = self.KNN_with_normals(pc2)
+            else:
+                self.dist2, self.NN_pc2, _ = knn_points(self.pc2, self.pc2, K=self.K)
 
-            # This is hence forward!
-            pc1 = pc_with_norms
+            self.NN_pc2 = mask_NN_by_dist(self.dist2, self.NN_pc2, max_radius)
 
-        # Smoothness
-        if args.l_sm > 0:
+            if VA:
+                pass
 
-            dist, self.NN_pc1, _ = knn_points(pc1, pc1, lengths1=None, lengths2=None, K=args.smooth_K, norm=1)
+    def forward(self, pc1, est_flow, pc2):
 
-            if args.l_vsm > 0:
+        loss = torch.tensor(0, dtype=torch.float32, device=pc1.device)
 
-                mask_NN_by_dist(dist, self.NN_pc1, args.l.NN_max_radius)
-                self.NN_pc1 = strip_KNN_with_vis(pc1[0], self.NN_pc1[0], VOF=self.VOF, HOF=self.HOF, margin=3).unsqueeze(0)
+        if self.smooth_weight > 0:
+            smooth_loss, pp_smooth_loss = self.smoothness_loss(est_flow, self.NN_pc1, self.loss_norm)
 
-        if args.l_ff > 0.:
-            _, self.NN_pc2, _ = knn_points(pc2, pc2, lengths1=None, lengths2=None, K=args.smooth_K, norm=1)
+            loss += self.smooth_weight * smooth_loss
+
+        if self.forward_weight > 0:
+            forward_loss, pp_forward_loss = self.forward_smoothness(pc1, est_flow, pc2)
+
+            loss += self.forward_weight * forward_loss
+
+        return loss
+
+    def KNN_with_normals(self, pc):
+
+        normals = estimate_pointcloud_normals(pc, neighborhood_size=self.normals_K)
+        pc_with_norms = torch.cat([pc, normals], dim=-1)
+
+        return knn_points(pc_with_norms, pc_with_norms, K=self.K)
+
+    def smoothness_loss(self, est_flow, NN_idx, loss_norm=1, mask=None):
+
+        bs, n, c = est_flow.shape
+
+        if bs > 1:
+            print("Smoothness Maybe not working for bs>1, needs testing!")
+        K = NN_idx.shape[2]
+
+        est_flow_neigh = est_flow.view(bs * n, c)
+        est_flow_neigh = est_flow_neigh[NN_idx.view(bs * n, K)]
+
+        est_flow_neigh = est_flow_neigh[:, 1:K + 1, :]
+        flow_diff = est_flow.view(bs * n, c) - est_flow_neigh.permute(1, 0, 2)
+
+        flow_diff = (flow_diff).norm(p=loss_norm, dim=2)
+        smooth_flow_loss = flow_diff.mean()
+        smooth_flow_per_point = flow_diff.mean(dim=0).view(bs, n)
+
+        return smooth_flow_loss, smooth_flow_per_point
 
 
-    def forward(self, pc1, pc2, est_flow):
-        args = self.args
+    def forward_smoothness(self, pc1, est_flow, pc2):
 
-        loss_dict = {}
-        loss = 0
 
-        if args.l_sm > 0 or args.l_vsm > 0:
-            smooth_loss, smooth_per_point = smoothness_loss(est_flow, self.NN_pc1, loss_norm=1, mask=None)
+        _, forward_nn, _ = knn_points(pc1 + est_flow, pc2, lengths1=None, lengths2=None, K=1, norm=1)
 
-            loss_dict['smooth_loss'] = smooth_loss
-            loss_dict['smooth_per_point'] = smooth_per_point
+        a = est_flow[0] # magnitude
 
-            loss += args.l_sm * smooth_loss
+        ind = forward_nn[0] # more than one?
 
-        if args.l_ch > 0 and args.l_dt == 0:
-            chamfer_loss, per_point_chamfer, x_to_y = chamfer_distance_loss(pc1 + est_flow, pc2,
-                                                        both_ways=args.l_ch_bothways, normals_K=args.normals_K, loss_norm=1)
+        if pc1.shape[1] < pc2.shape[1]:
+            shape_diff = pc2.shape[1] - ind.shape[0] + 1 # one for dummy    # what if pc1 is bigger than pc2?
+            a = torch.nn.functional.pad(a, (0,0,0, shape_diff), mode='constant', value=0)
+            a.retain_grad() # padding does not retain grad, need to do it manually. Check it
 
-            loss_dict['chamfer_loss'] = chamfer_loss
-            loss_dict['chamfer_per_point'] = per_point_chamfer
-            loss_dict['chamfer_x_to_y'] = x_to_y
+            ind = torch.nn.functional.pad(ind, (0,0,0, shape_diff), mode='constant', value=pc2.shape[1])  # pad with dummy not in orig
 
-            loss += args.l_ch * chamfer_loss
+        # storage of same points
+        vec = torch.zeros(ind.shape[0], 3, device=pc1.device)
 
-        if args.l_dt > 0:
-            dt_loss, per_point_dt = self.dt.torch_bilinear_distance(pc1 + est_flow)
+        # this is forward flow withnout NN_pc2 smoothness
+        vec = vec.scatter_reduce_(0, ind.repeat(1,3), a, reduce='mean', include_self=False)
 
-            loss_dict['dt_loss'] = dt_loss
-            loss_dict['dt_per_point'] = per_point_dt
+        forward_flow_loss = torch.nn.functional.mse_loss(vec[ind[:,0]], a, reduction='none').mean(dim=-1)
 
-            loss += args.l_dt * dt_loss
+        if self.pc2_smooth:
+            # rest is pc2 smoothness with pre-computed NN
+            keep_ind = ind[ind[:,0] != pc2.shape[1] ,0]
 
-        if args.l_ff > 0:
+            # znamena, ze est flow body maji tyhle indexy pro body v pc2 a ty indexy maji mit stejne flow.
+            n = self.NN_pc2[0, keep_ind, :]
 
-            # FF_loss, per_point_FF = forward_flow_loss(pc1, pc2, est_flow)
-            ff_loss, per_point_ff_loss, pc2_smooth_loss = forward_smoothness(pc1, pc2, est_flow, NN_pc2=self.NN_pc2,
-                                                            K=args.smooth_K, include_pc2_smoothness=args.pc2_smoothness)
+            # beware of zeros!!!
+            connected_flow = vec[n] # N x KSmooth x 3 (fx, fy, fz)
 
-            loss_dict['ff_loss'] = ff_loss
-            loss_dict['ff_per_point'] = per_point_ff_loss
-            loss_dict['ff_pc2_smooth_loss'] = pc2_smooth_loss
+            prep_flow = est_flow[0].unsqueeze(1).repeat_interleave(repeats=self.K, dim=1) # correct
 
-            loss += args.l_ff * ff_loss + args.l_ff * pc2_smooth_loss
+            # smooth it, should be fine
+            flow_diff = prep_flow - connected_flow  # correct operation, but zeros makes problem
 
-        loss_dict['loss'] = loss
+            occupied_mask = connected_flow.all(dim=2).repeat(3,1,1).permute(1,2,0)
 
-        return loss_dict
+            # occupied_mask
+            per_flow_dim_diff = torch.masked_select(flow_diff, occupied_mask)
 
-if __name__ == "__main__":
-    pass
+            # per_point_loss = per_flow_dim_diff.norm(dim=-1).mean()
+            NN_pc2_loss = (per_flow_dim_diff ** 2).mean()    # powered to 2 because norm will sum it directly
 
-    # KNN for normals estimation
-    # KNN smoothness
-    # KNN max radius
+        else:
+            NN_pc2_loss = torch.tensor(0.)
+
+        forward_loss = forward_flow_loss.mean() + NN_pc2_loss
+
+        return forward_loss, forward_flow_loss
+
+class VAChamferLoss(torch.nn.Module):
+
+    def __init__(self, pc2, fov_up, fov_down, proj_H, proj_W, max_range, nn_weight=1, max_radius=2, both_ways=False, free_weight=0, margin=0.001, ch_normals_K=0, **kwargs):
+        super().__init__()
+
+        self.pc2 = pc2
+
+        # visibility component
+        # todo option of "pushing" points out of the freespace
+        self.fov_up = fov_up
+        self.fov_down = fov_down
+        self.proj_H = proj_H
+        self.proj_W = proj_W
+        self.max_range = max_range
+        self.margin = margin
+        self.free_weight = free_weight
+
+        # NN component
+        self.normals_K = ch_normals_K
+        self.nn_weight = nn_weight
+        self.nn_max_radius = max_radius
+        self.both_ways = both_ways
+
+        torch.use_deterministic_algorithms(mode=True, warn_only=False)  # this ...
+        pc2_depth, idx_w, idx_h, inside_range_img = range_image_coords(pc2[0], fov_up, fov_down, proj_H, proj_W)
+        self.range_depth = create_depth_img(pc2_depth, idx_w, idx_h, proj_H, proj_W, inside_range_img)
+        torch.use_deterministic_algorithms(mode=False, warn_only=False)  # this ...
+
+    def forward(self, pc1, est_flow, pc2=None):
+        '''
+
+        Args:
+            pc1:
+            est_flow:
+
+        Returns:
+        mask whether the deformed point cloud is in freespace visibility area
+        '''
+        # dynamic
+
+        # assign Kabsch to lonely points or just push them out of freespace?
+        # precompute chamfer, radius
+        chamf_x, chamf_y = self.chamfer_distance_loss(pc1 + est_flow, self.pc2, both_ways=self.both_ways, normals_K=self.normals_K)
+
+        if self.free_weight > 0:
+            freespace_loss = self.flow_freespace_loss(pc1, est_flow, chamf_x)
+
+        else:
+            freespace_loss = torch.zeros_like(chamf_x, dtype=torch.float32, device=chamf_x.device)
+
+        chamf_loss = self.nn_weight * (chamf_x.mean() + chamf_y.mean()) + self.free_weight * freespace_loss.mean()
+
+        return chamf_loss, freespace_loss
+
+
+    def chamfer_distance_loss(self, x, y, x_lengths=None, y_lengths=None, both_ways=False, normals_K=0, loss_norm=1):
+        '''
+        Unique Nearest Neighboors?
+        :param x:
+        :param y:
+        :param x_lengths:
+        :param y_lengths:
+        :param reduction:
+        :return:
+        '''
+        if normals_K >= 3:
+            normals1 = estimate_pointcloud_normals(x, neighborhood_size=normals_K)
+            normals2 = estimate_pointcloud_normals(y, neighborhood_size=normals_K)
+
+            x = torch.cat([x, normals1], dim=-1)
+            y = torch.cat([y, normals2], dim=-1)
+
+
+        x_nn = knn_points(x, y, lengths1=x_lengths, lengths2=y_lengths, K=1, norm=loss_norm)
+        cham_x = x_nn.dists[..., 0]  # (N, P1)
+        # x_nearest_to_y = x_nn[1]
+
+        if both_ways:
+            y_nn = knn_points(y, x, lengths1=y_lengths, lengths2=x_lengths, K=1, norm=loss_norm)
+            cham_y = y_nn.dists[..., 0]  # (N, P2)
+            # y_nearest_to_x = y_nn[1]
+        else:
+
+            cham_y = torch.tensor(0, dtype=torch.float32, device=x.device)
+
+        return cham_x, cham_y
+
+    def flow_freespace_loss(self, pc1, est_flow, chamf_x):
+
+        flow_depth, flow_w, flow_h, flow_inside = range_image_coords((pc1 + est_flow)[0], self.fov_up, self.fov_down, self.proj_H, self.proj_W)
+
+            # use it only for flow inside the image
+        masked_pc2_depth = self.range_depth[flow_h[flow_inside], flow_w[flow_inside]]
+        compared_depth = masked_pc2_depth - flow_depth[flow_inside]
+
+        # compared_depth
+        # if flow point before the visible point from pc2, then it is in freespace
+        # margin is just little number to not push points already close to visible point
+        flow_in_freespace = compared_depth > 0 + self.margin
+
+
+        # Indexing flow in freespace
+        freespace_mask = torch.zeros_like(chamf_x, dtype=torch.bool)[0]
+        freespace_mask[flow_inside] = flow_in_freespace
+
+        # only pc1 NN
+        freespace_loss = freespace_mask * chamf_x
+
+        return freespace_loss
+
+
+class LossModule(torch.nn.Module):
+
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.kwargs = kwargs
+
+
+    def update(self, pc1, pc2):
+
+        self.VAChamfer_loss = VAChamferLoss(pc2, **self.kwargs)
+        self.Smoothness_loss = SmoothnessLoss(pc1, pc2, **self.kwargs)
+
+    def forward(self, pc1, est_flow, pc2):
+
+        chamf_loss, pp_freespace_loss = self.VAChamfer_loss(pc1, est_flow)
+        smooth_loss = self.Smoothness_loss(pc1, est_flow, pc2)
+
+        loss = smooth_loss + chamf_loss
+
+        return loss
+
+if __name__ == '__main__':
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import torch
+
+    from vis.deprecated_vis import *
+
+    from data.NSF_data import NSF_dataset
+    from data.range_image import range_image_coords, create_depth_img
+
+    dataset = NSF_dataset()
+    data = next(dataset.__iter__())
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    pc1, pc2, gt_flow = data
+
+    pc1 = pc1.to(device)
+    pc2 = pc2.to(device)
+    gt_flow = gt_flow.to(device)
+    est_flow = torch.randn(pc1.shape, device=device, requires_grad=True)
+
+    fov_up = 25
+    fov_down = - 25
+    proj_H = 50  # ?
+    proj_W = 2048
+    max_range = 70
+
+
+    kwargs = {
+        'fov_up': fov_up,
+        'fov_down': fov_down,
+        'proj_H': proj_H,
+        'proj_W': proj_W,
+        'max_range': max_range,
+        'margin': 0.01,
+        'both_ways' : True,
+
+        # Smooth
+        'sm_normals_K' : 8,
+        'K': 5,
+        'forward_weight' : 1,
+        'smooth_weight' : 1,
+
+        # Chamfer
+        'free_weight' : 1,
+        'ch_normals_K' : 0,
+        'nn_weights' : 2,
+        'nn_max_radius' : 2,
+        'smoothness_weight' : 0.1,
+    }
+
+    loss_module = LossModule(**kwargs)
+    loss_module.update(pc1, pc2)
+    loss = loss_module(pc1, est_flow, pc2)
+
+    loss.backward()
+    if __name__ == "__main__":
+        pass
+

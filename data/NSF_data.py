@@ -17,6 +17,11 @@ class NSF_dataset():
         if dataset_type in ['argoverse']:
             dataset_module = importlib.import_module('data.params.' + dataset_type)
             self.data_config = dataset_module.data_config
+            # pre-process data, shift them if not in origin
+            # todo dataset lidar pose   # in dataprocessing?
+
+        # todo: max range here?
+        self.lidar_pose = torch.tensor(self.data_config['lidar_pose']).unsqueeze(0).to(torch.float32)
 
     def __iter__(self):
         return self
@@ -30,6 +35,9 @@ class NSF_dataset():
 
         pc1 = torch.from_numpy(data['pc1']).unsqueeze(0).to(torch.float32)
         pc2 = torch.from_numpy(data['pc2']).unsqueeze(0).to(torch.float32)
+
+        pc1 = pc1 - self.lidar_pose
+        pc2 = pc2 - self.lidar_pose
 
         gt_flow = torch.from_numpy(data['flow']).unsqueeze(0).to(torch.float32)
 
