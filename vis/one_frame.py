@@ -1,46 +1,41 @@
-from vis.deprecated_vis import *
+# pyline: disable=no-member
+""" plot3d using existing visuals : LinePlotVisual """
+
+import numpy as np
 import sys
 
+from vispy import app, visuals, scene
 
-if 'pycharm' in sys.argv[0]:
-    frame = 162
-    path = f'/home/patrik/rci/experiments/scoop_K32_normals/pc_res/{frame:06d}_res.npz'
-else:
-    frame = int(sys.argv[1])
-    path = f'/home/patrik/rci/experiments/scoop_{sys.argv[2]}/pc_res/{frame:06d}_res.npz'
+# build visuals
+Plot3D = scene.visuals.create_visual_node(visuals.LinePlotVisual)
 
-data = np.load(path, allow_pickle=True)
+# build canvas
+canvas = scene.SceneCanvas(keys='interactive', title='plot3d', show=True)
 
-print(data.files)
+# Add a ViewBox to let the user zoom/rotate
+view = canvas.central_widget.add_view()
+view.camera = 'turntable'
+view.camera.fov = 45
+view.camera.distance = 6
 
-# visualize_points3D(data['pc1'], np.arange(len(data['pc1'])))
+# prepare data
+N = 60
+x = np.sin(np.linspace(-2, 2, N)*np.pi)
+y = np.cos(np.linspace(-2, 2, N)*np.pi)
+z = np.linspace(-2, 2, N)
 
-# visualize_flow3d(data['pc1'], data['pc2'], data['est_flow_for_pc1'])
+# plot
 
-# visualize_KNN_connections(data['pc1'], data['KNN'])
-
-import mayavi.mlab as mlab
-
+data = np.load('/home/patrik/cmp/experiments/SCOOP/2023-07-11-17-11-13-450/inference/000000.npz', allow_pickle=True)
 pc1 = data['pc1']
-pc2 = data['pc2']
-flow = data['est_flow_for_pc1']
-normals = data['normals'][0]
+gt_flow = data['gt_flow']
 
 
-
-# import matplotlib.pyplot as plt
-# plt.scatter(pc1[:,0], pc1[:, 2], c=pc1[:, 2])
-# plt.show()
-
-mlab.points3d(pc1[:, 0], pc1[:, 1], pc1[:, 2], color=(0,0,1), scale_factor=0.02)
-mlab.points3d(pc2[:, 0], pc2[:, 1], pc2[:, 2], color=(1,0,0), scale_factor=0.02)
-mlab.quiver3d(pc1[:, 0], pc1[:, 1], pc1[:, 2], flow[:, 0], flow[:, 1], flow[:, 2], color=(0,1,0), line_width=0.1, mode='arrow', scale_factor=1)
-mlab.quiver3d(pc1[:, 0], pc1[:, 1], pc1[:, 2], normals[:, 0], normals[:, 1], normals[:, 2], color=(1,1,1), line_width=0.1, mode='arrow', scale_factor=1)
-# mlab.quiver3d(pc1[:, 0], pc1[:, 1], pc1[:, 2], corrected_normals[:, 0], corrected_normals[:, 1], corrected_normals[:, 2], color=(1,1,1), line_width=0.1, mode='arrow', scale_factor=1)
-# mlab.quiver3d(pc1[:, 0], pc1[:, 1], pc1[:, 2], direction_to_origin[:, 0], direction_to_origin[:, 1], direction_to_origin[:, 2], color=(0.5,0.5,0.5), line_width=0.1, mode='arrow', scale_factor=1)
+Plot3D(gt_flow, width=2.0, color='green',
+       edge_color='w', symbol='>', face_color=(0.2, 0.2, 1, 0.8),
+       parent=view.scene)
 
 
-knn = data['KNN']
-
-
-mlab.show()
+if __name__ == '__main__':
+    if sys.flags.interactive != 1:
+        app.run()

@@ -2,7 +2,7 @@ import torch
 from models.scoopy.utils import ot, reconstruction as R
 from models.scoopy.networks.graph import Graph
 from models.scoopy.networks.gconv import SetConv
-
+from pytorch3d.ops.knn import knn_points
 
 class SCOOP(torch.nn.Module):
     def __init__(self, args):
@@ -66,7 +66,23 @@ class SCOOP(torch.nn.Module):
 
         """
 
-        graph = Graph.construct_graph(pcloud, nb_neighbors)
+        # todo create neighboors with pytorch3d and edges
+        dist, NN, _ = knn_points(pcloud, pcloud, K=nb_neighbors)
+
+        size_batch = 1
+        neighbors = NN.reshape(-1)
+        edge_feats = (pcloud[0, NN[0]].permute(1, 0, 2) - pcloud[0]).permute(1, 0, 2).reshape(-1, 3)
+        nb_points = pcloud.shape[1]
+        #
+        # graph = Graph.construct_graph(pcloud, nb_neighbors)
+        # graph = Graph.construct_graph_in_chunks(pcloud, nb_neighbors, 2048)
+        graph = Graph(
+            neighbors,
+            edge_feats,
+            nb_neighbors,
+            [size_batch * nb_points, size_batch * nb_points],
+        )
+
         x = self.feat_conv1(pcloud, graph)
         x = self.feat_conv2(x, graph)
         x = self.feat_conv3(x, graph)

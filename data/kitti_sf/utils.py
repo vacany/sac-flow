@@ -15,6 +15,7 @@ def pixel2xyz(depth, P_rect, px=None, py=None):
         px = np.tile(np.arange(width, dtype=np.float32)[None, :], (height, 1))
     if py is None:
         py = np.tile(np.arange(height, dtype=np.float32)[:, None], (1, width))
+
     const_x = P_rect[0, 2] * depth + P_rect[0, 3]
     const_y = P_rect[1, 2] * depth + P_rect[1, 3]
 
@@ -25,29 +26,6 @@ def pixel2xyz(depth, P_rect, px=None, py=None):
     pc[..., :2] *= -1.
     return pc
 
-# todo xyz2pixel funciton
-def xyz2pixel(pc, P_rect):
-    assert P_rect[0, 1] == 0
-    assert P_rect[1, 0] == 0
-    assert P_rect[2, 0] == 0
-    assert P_rect[2, 1] == 0
-    assert P_rect[0, 0] == P_rect[1, 1]
-    focal_length_pixel = P_rect[0, 0]
-
-    height, width = depth.shape[:2]
-    if px is None:
-        px = np.tile(np.arange(width, dtype=np.float32)[None, :], (height, 1))
-    if py is None:
-        py = np.tile(np.arange(height, dtype=np.float32)[:, None], (1, width))
-    const_x = P_rect[0, 2] * depth + P_rect[0, 3]
-    const_y = P_rect[1, 2] * depth + P_rect[1, 3]
-
-    x = ((px * (depth + P_rect[2, 3]) - const_x) / focal_length_pixel)[:, :, None]
-    y = ((py * (depth + P_rect[2, 3]) - const_y) / focal_length_pixel)[:, :, None]
-    pc = np.concatenate((x, y, depth[:, :, None]), axis=-1)
-
-    pc[..., :2] *= -1.
-    return pc
 
 def load_uint16PNG(fpath):
     reader = png.Reader(fpath)

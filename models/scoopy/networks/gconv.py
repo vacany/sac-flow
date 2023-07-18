@@ -64,6 +64,7 @@ class SetConv(torch.nn.Module):
         signal = signal.view(b, n_out, graph.k_neighbors, c + 3)
         signal = signal.transpose(1, -1)
 
+
         # Pointnet++-like convolution
         for func in [
             self.fc1,

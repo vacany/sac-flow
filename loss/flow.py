@@ -1,11 +1,12 @@
 import torch
 import sys
 import argparse
+import importlib
 import torch.nn.functional as F
 from pytorch3d.ops.knn import knn_points
 from pytorch3d.ops.points_normals import estimate_pointcloud_normals
 
-from data.range_image import range_image_coords, create_depth_img
+from data.range_image import VisibilityScene
 # import FastGeodis
 
 from .visibility import KNN_visibility_solver, substitute_NN_by_mask, strip_KNN_with_vis
@@ -239,7 +240,7 @@ def _forward_smoothness(pc1, pc2, est_flow, NN_pc2=None, K=2, include_pc2_smooth
 
 class SmoothnessLoss(torch.nn.Module):
 
-#     # use normals to calculate smoothness loss
+    # use normals to calculate smoothness loss
     def __init__(self, pc1, pc2=None, K=12, sm_normals_K=0, smooth_weight=1., VA=False, max_radius=2, loss_norm=1, forward_weight=0., pc2_smooth=False, **kwargs):
 
         super().__init__()
@@ -251,22 +252,26 @@ class SmoothnessLoss(torch.nn.Module):
         self.loss_norm = loss_norm
         self.smooth_weight = smooth_weight
 
-        # normal Smoothness
-        if self.normals_K > 3:
-            self.dist1, self.NN_pc1, _ = self.KNN_with_normals(pc1)
-        else:
-            self.dist1, self.NN_pc1, _ = knn_points(self.pc1, self.pc1, K=self.K)
+        self.Visibility_pc1 = VisibilityScene(dataset=kwargs['dataset'], pc_scene=pc1[0])
+        self.Visibility_pc2 = VisibilityScene(dataset=kwargs['dataset'], pc_scene=pc2[0])
 
-        self.NN_pc1 = mask_NN_by_dist(self.dist1, self.NN_pc1, max_radius)
+
+        # normal Smoothness
+        if K > 0:
+
+            if self.normals_K > 3:
+                self.dist1, self.NN_pc1, _ = self.KNN_with_normals(pc1)
+            else:
+                self.dist1, self.NN_pc1, _ = knn_points(self.pc1, self.pc1, K=self.K)
+
+            self.NN_pc1 = mask_NN_by_dist(self.dist1, self.NN_pc1, max_radius)
 
 
         # vis-aware - jenom skrtam, muze byt po radiusu
         self.VA = VA
         if VA:
-            # todo
-            # self.nn_ind = strip_KNN_with_vis(self.pc[0], self.nn_ind[0], self.VOF, self.HOV,
-            #                                  margin=self.margin).unsqueeze(0)
-            pass
+            self.NN_pc1 = self.Visibility_pc1.visibility_aware_smoothness_KNN(self.NN_pc1).unsqueeze(0)
+
         # ff
         self.forward_weight = forward_weight
 
@@ -274,7 +279,7 @@ class SmoothnessLoss(torch.nn.Module):
         self.pc2_smooth = pc2_smooth
         self.NN_pc2 = None
 
-        if pc2_smooth:
+        if pc2_smooth and K > 0:
 
             if self.normals_K > 3:
                 self.dist2, self.NN_pc2, _ = self.KNN_with_normals(pc2)
@@ -284,13 +289,14 @@ class SmoothnessLoss(torch.nn.Module):
             self.NN_pc2 = mask_NN_by_dist(self.dist2, self.NN_pc2, max_radius)
 
             if VA:
-                pass
+                self.NN_pc2 = self.Visibility_pc2.visibility_aware_smoothness_KNN(self.NN_pc2).unsqueeze(0)
 
     def forward(self, pc1, est_flow, pc2):
 
         loss = torch.tensor(0, dtype=torch.float32, device=pc1.device)
 
         if self.smooth_weight > 0:
+
             smooth_loss, pp_smooth_loss = self.smoothness_loss(est_flow, self.NN_pc1, self.loss_norm)
 
             loss += self.smooth_weight * smooth_loss
@@ -386,17 +392,23 @@ class SmoothnessLoss(torch.nn.Module):
 
 class VAChamferLoss(torch.nn.Module):
 
-    def __init__(self, pc2, fov_up, fov_down, proj_H, proj_W, max_range, nn_weight=1, max_radius=2, both_ways=False, free_weight=0, margin=0.001, ch_normals_K=0, **kwargs):
+    def __init__(self, pc2, fov_up, fov_down, H, W, max_range, nn_weight=1, max_radius=2, both_ways=False, free_weight=0, margin=0.001, ch_normals_K=0, **kwargs):
         super().__init__()
-
+        self.kwargs = kwargs
         self.pc2 = pc2
 
-        # visibility component
+        self.Visibility = VisibilityScene(dataset=self.kwargs['dataset'], pc_scene=pc2[0])
+
+        # import matplotlib.pyplot as plt
+        # plt.imshow(self.Visibility.depth_image.flip(0).detach().cpu().numpy())
+        # plt.savefig('/home.dokt/vacekpa2/pcflow/toy_samples/tmp_vis/de.png')
+        # plt.close()
+
         # todo option of "pushing" points out of the freespace
         self.fov_up = fov_up
         self.fov_down = fov_down
-        self.proj_H = proj_H
-        self.proj_W = proj_W
+        self.H = H
+        self.W = W
         self.max_range = max_range
         self.margin = margin
         self.free_weight = free_weight
@@ -407,10 +419,11 @@ class VAChamferLoss(torch.nn.Module):
         self.nn_max_radius = max_radius
         self.both_ways = both_ways
 
-        torch.use_deterministic_algorithms(mode=True, warn_only=False)  # this ...
-        pc2_depth, idx_w, idx_h, inside_range_img = range_image_coords(pc2[0], fov_up, fov_down, proj_H, proj_W)
-        self.range_depth = create_depth_img(pc2_depth, idx_w, idx_h, proj_H, proj_W, inside_range_img)
-        torch.use_deterministic_algorithms(mode=False, warn_only=False)  # this ...
+        # torch.use_deterministic_algorithms(mode=True, warn_only=False)  # this ...
+        # pc2_depth, idx_w, idx_h, inside_range_img = range_image_coords(pc2[0], fov_up, fov_down, proj_H, proj_W)
+
+        # self.range_depth = create_depth_img(pc2_depth, idx_w, idx_h, proj_H, proj_W, inside_range_img)
+        # torch.use_deterministic_algorithms(mode=False, warn_only=False)  # this ...
 
     def forward(self, pc1, est_flow, pc2=None):
         '''
@@ -473,34 +486,40 @@ class VAChamferLoss(torch.nn.Module):
 
     def flow_freespace_loss(self, pc1, est_flow, chamf_x):
 
-        flow_depth, flow_w, flow_h, flow_inside = range_image_coords((pc1 + est_flow)[0], self.fov_up, self.fov_down, self.proj_H, self.proj_W)
+        # flow_depth, flow_w, flow_h, flow_inside = self.Visibility.generate_range_coors(pc1 + est_flow)
+        pc2_image_depth = self.Visibility.assign_depth_to_flow((pc1 + est_flow)[0])
+        flow_depth = ((pc1+est_flow)[0]).norm(dim=-1)
 
             # use it only for flow inside the image
-        masked_pc2_depth = self.range_depth[flow_h[flow_inside], flow_w[flow_inside]]
-        compared_depth = masked_pc2_depth - flow_depth[flow_inside]
+        # masked_pc2_depth = self.range_depth[flow_h[flow_inside], flow_w[flow_inside]]
+        compared_depth = pc2_image_depth - flow_depth
 
-        # compared_depth
+
         # if flow point before the visible point from pc2, then it is in freespace
         # margin is just little number to not push points already close to visible point
         flow_in_freespace = compared_depth > 0 + self.margin
 
 
         # Indexing flow in freespace
-        freespace_mask = torch.zeros_like(chamf_x, dtype=torch.bool)[0]
-        freespace_mask[flow_inside] = flow_in_freespace
+        # freespace_mask = torch.zeros_like(chamf_x, dtype=torch.bool)[0]
+        # freespace_mask = flow_in_freespace
 
         # only pc1 NN
-        freespace_loss = freespace_mask * chamf_x
+        freespace_loss = flow_in_freespace * chamf_x
 
         return freespace_loss
 
 
+# datainfo
 class LossModule(torch.nn.Module):
 
     def __init__(self, **kwargs):
         super().__init__()
         self.kwargs = kwargs
 
+        if kwargs['dataset'] in ['kitti_t', 'kitti_o']:
+            # range function
+            pass
 
     def update(self, pc1, pc2):
 
@@ -513,67 +532,6 @@ class LossModule(torch.nn.Module):
         smooth_loss = self.Smoothness_loss(pc1, est_flow, pc2)
 
         loss = smooth_loss + chamf_loss
-
+        # todo save losses
         return loss
-
-if __name__ == '__main__':
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import torch
-
-    from vis.deprecated_vis import *
-
-    from data.NSF_data import NSF_dataset
-    from data.range_image import range_image_coords, create_depth_img
-
-    dataset = NSF_dataset()
-    data = next(dataset.__iter__())
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    pc1, pc2, gt_flow = data
-
-    pc1 = pc1.to(device)
-    pc2 = pc2.to(device)
-    gt_flow = gt_flow.to(device)
-    est_flow = torch.randn(pc1.shape, device=device, requires_grad=True)
-
-    fov_up = 25
-    fov_down = - 25
-    proj_H = 50  # ?
-    proj_W = 2048
-    max_range = 70
-
-
-    kwargs = {
-        'fov_up': fov_up,
-        'fov_down': fov_down,
-        'proj_H': proj_H,
-        'proj_W': proj_W,
-        'max_range': max_range,
-        'margin': 0.01,
-        'both_ways' : True,
-
-        # Smooth
-        'sm_normals_K' : 8,
-        'K': 5,
-        'forward_weight' : 1,
-        'smooth_weight' : 1,
-
-        # Chamfer
-        'free_weight' : 1,
-        'ch_normals_K' : 0,
-        'nn_weights' : 2,
-        'nn_max_radius' : 2,
-        'smoothness_weight' : 0.1,
-    }
-
-    loss_module = LossModule(**kwargs)
-    loss_module.update(pc1, pc2)
-    loss = loss_module(pc1, est_flow, pc2)
-
-    loss.backward()
-    if __name__ == "__main__":
-        pass
 

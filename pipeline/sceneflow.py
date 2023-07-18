@@ -13,10 +13,12 @@ import datetime
 from tqdm import tqdm
 
 from data.PATHS import DATA_PATH, TMP_VIS_PATH, EXP_PATH
-
+from data.seed import seed_everything
 from loss.flow import LossModule
 from ops.metric import scene_flow_metrics
-from models.FastNSF.optimization import Neural_Prior, Timers, EarlyStopping, init_weights
+from models.FastNSF.optimization import Timers, EarlyStopping, init_weights
+
+
 
 
 def preprocess_args(args):
@@ -63,14 +65,20 @@ def build_dataloader(args):
     from data.NSF_data import NSF_dataset
     dataset = NSF_dataset(dataset_type=args.dataset)
 
-    for add_arg in ['lidar_pose', 'fov_up', 'fov_down', 'proj_H', 'proj_W']:
+    for add_arg in ['lidar_pose', 'fov_up', 'fov_down', 'H', 'W']:
         setattr(args, add_arg, dataset.data_config[add_arg])
 
     return dataset, args
 
 def build_model(args):
 
-    net = Neural_Prior()
+    if args.model == 'NeuralPrior':
+        from models.FastNSF.optimization import Neural_Prior
+        net = Neural_Prior()
+
+    elif args.model == 'SCOOP':
+        from models.scoopy.get_model import PretrainedSCOOP
+        net = PretrainedSCOOP()
 
     return net
 
@@ -114,6 +122,9 @@ def solver(
     total_acc_strit = []
     total_iter_time = []
 
+    epe_all = []
+    loss_all = []
+
     early_stopping = EarlyStopping(patience=args.early_patience, min_delta=args.early_min_delta)
 
 
@@ -144,7 +155,7 @@ def solver(
         iter_time_init = time.time()
 
         optimizer.zero_grad()
-
+        # print(net.refinement)   # uci se
         net_time_st = time.time()
         flow_pred_1 = net(pc1)
         net_time = net_time + time.time() - net_time_st
@@ -160,6 +171,7 @@ def solver(
         net_backward_time = net_backward_time + time.time() - net_backward_st
 
 
+
         if early_stopping.step(loss):
             break
 
@@ -170,6 +182,9 @@ def solver(
         flow_metrics = gt_flow.clone()
         EPE3D_1, acc3d_strict_1, acc3d_relax_1, outlier_1, angle_error_1 = scene_flow_metrics(flow_pred_1_final,
                                                                                               flow_metrics)
+
+        loss_all.append(loss.item())
+        epe_all.append(EPE3D_1)
 
         # ANCHOR: get best metrics
         if loss <= best_loss_1:
@@ -205,6 +220,8 @@ def solver(
         'epoch': best_epoch,
         'solver_time': solver_time,
         'pre_compute_time': pre_compute_time,
+        'loss_all' : loss_all,
+        'epe_all' : epe_all
     }
 
 
@@ -249,25 +266,26 @@ class SceneFlowSolver():
 
         for batch_id, data in tqdm(enumerate(self.dataloader)):
 
-            if batch_id != 1: continue
-
-
             pc1, pc2, gt_flow = data
 
             pc1 = pc1.to(self.device)
             pc2 = pc2.to(self.device)
             gt_flow = gt_flow.to(self.device)
 
-            # Benchmark area, nsf is not doing that, but still baseline exp is done consistently with others, nsf also perform worse here for some reason
-            radius_mask = pc1.norm(dim=-1) < self.args.max_range
-            radius_mask2 = pc2.norm(dim=-1) < self.args.max_range
+            # JESUS!!!
+            # # Benchmark area, nsf is not doing that, but still baseline exp is done consistently with others, nsf also perform worse here for some reason
+            # radius_mask = pc1.norm(dim=-1) < self.args.max_range
+            # radius_mask2 = pc2.norm(dim=-1) < self.args.max_range
+            #
+            # pc1 = pc1[:,radius_mask[0]]
+            # pc2 = pc2[:,radius_mask2[0]]
+            # gt_flow = gt_flow[:,radius_mask[0]]
 
-            pc1 = pc1[:,radius_mask[0]]
-            pc2 = pc2[:,radius_mask2[0]]
-            gt_flow = gt_flow[:,radius_mask[0]]
+            if hasattr(self.model, 'update'):
+                self.model.update(pc1, pc2)
+                self.model = self.model.eval()
 
-            # todo opt weights, scoop
-
+            # update loss function
 
             pred_dict = solver(pc1, pc2, gt_flow, self.model, self.Loss_Function, self.args)
 
@@ -281,18 +299,22 @@ class SceneFlowSolver():
                           'acc3d_relax' : pred_dict['acc3d_relax_1'],
                           'angle_error' : pred_dict['angle_error_1'],
                           'outlier' : pred_dict['outlier_1'],
-                          'avg_solver_time' : pred_dict['solver_time'],}
+                          'avg_solver_time' : pred_dict['solver_time'],
+                          'loss_all': pred_dict['loss_all'],
+                          'epe_all': pred_dict['epe_all'],
+                          }
 
             self.outputs.append(dict(list(store_dict.items())[1:]))
 
             if args.store_inference:
-                self.store_inference(pc1, pc2, pred_flow, gt_flow, batch_id)
+                # store optimization
+                self.store_inference(pc1, pc2, pred_flow, gt_flow, batch_id, store_dict)
 
             if args.dev:
-                print(args)
+
                 if args.vis:
                     from vis.deprecated_vis import visualize_flow3d
-                    visualize_flow3d(pc1[0].detach().cpu().numpy(), pc2[0].detach().cpu().numpy(), gt_flow[0].detach().cpu().numpy())
+                    # visualize_flow3d(pc1[0].detach().cpu().numpy(), pc2[0].detach().cpu().numpy(), gt_flow[0].detach().cpu().numpy())
                     visualize_flow3d(pc1[0].detach().cpu().numpy(), pc2[0].detach().cpu().numpy(), pred_flow[0].detach().cpu().numpy())
                 break   # for development
 
@@ -301,7 +323,7 @@ class SceneFlowSolver():
 
         self.store_exp()
 
-    def store_inference(self, pc1, pc2, pred_flow, gt_flow, batch_id):
+    def store_inference(self, pc1, pc2, pred_flow, gt_flow, batch_id, store_dict):
 
         pc1 = pc1[0].detach().cpu().numpy()
         pc2 = pc2[0].detach().cpu().numpy()
@@ -311,45 +333,66 @@ class SceneFlowSolver():
 
         os.makedirs(self.exp_dir + '/inference', exist_ok=True)
         np.savez(self.exp_dir + f'/inference/{batch_id:06d}.npz', pc1=pc1, pc2=pc2, est_flow=flow_to_store,
-                 gt_flow=gt_to_store)
+                 gt_flow=gt_to_store, **store_dict)
 
     def store_exp(self):
         # metric
-        np.save(self.exp_dir + '/args.npy', self.args)
+        # np.save(self.exp_dir + '/args.npy', self.args)
         # print(np.load('test.npy', allow_pickle=True))
-        df = pd.DataFrame(self.outputs)
-        df.loc['mean'] = df.mean()
+        df = pd.DataFrame(self.outputs, columns=self.outputs[0].keys())
+        metric_types = df.columns.tolist()
+
+        final_metric = {}
+
+
+        for metric_type in metric_types:
+            if metric_type in ['loss_all', 'epe_all']: continue
+            # print(df[metric_type])
+
+            final_metric[metric_type] = df[metric_type].mean()
+
+
+        final_df = pd.DataFrame.from_dict(final_metric, orient='index')
+        final_df.to_csv(f'{self.exp_dir}/metric.csv', header=False)
+
+        # if self.args.dev:
+
+        print(final_df)
 
         log_file = open(f'{self.exp_dir}/logfile', 'w')
 
         log_file.writelines(f'---------- {self.exp_dir} ---------- \n')
         log_file.writelines(*[' \n'.join(f'{k}={v}' for k, v in vars(args).items())])
-        log_file.writelines(f'\n{df.mean()}\n')
+        log_file.writelines(f'\n{final_df}\n')
         log_file.writelines(f'---------- end of exp ---------- \n \n')
         log_file.close()
 
+        df = pd.DataFrame.from_dict(vars(self.args), orient='index')
+        df.to_csv(f'{self.exp_dir}/args.csv', header=False)
         # print(' \n'.join(f'{k}={v}' for k, v in vars(args).items()))
 
-        print(f'{df.mean()}')
 
     def optimize_sceneflow_with_hyperparams(self, args):
 
         raise NotImplemented
 
-# pro ted vyhodit DT kvuli FASTGEODIS?
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     ### General
-    parser.add_argument('--dataset', type=str, nargs='+', default='argoverse', help='argo or not yet implemented')
+    parser.add_argument('--dataset', type=str, nargs='+', default='kitti_t', help='argo or not yet implemented')
     parser.add_argument('--data_path', type=str, default=DATA_PATH, help='not yet') #?
     parser.add_argument('--exp_name', type=str, default='dev', help='name of the experiment') #?
-    parser.add_argument('--baseline', type=str, default='NSF', help='choose the baseline experiment') #?
+    parser.add_argument('--affiliation', type=str, default='none', help='name of the experiment') #?
+
+
     parser.add_argument('--gpu', type=str, default='0', help='choose one gpu resource') #?
     parser.add_argument('--verbose', type=int, default=0, help='print more information') #?
     parser.add_argument('--max_range', type=float, nargs='+', default=35, help='maximum range of LiDAR points') #?
     parser.add_argument('--per_sample_init', type=int, nargs='+', default=1, help='initialize model each time - optimization') #?
     parser.add_argument('--store_inference', type=int, default=0, help="store flow to exp folder")
 
+    parser.add_argument('--model', type=str, default='NeuralPrior', help='choose network')  # ?
     # Running
     parser.add_argument('--runs', type=int, default=1, help='start multiple runs for experiment variance') #?
     parser.add_argument('--dev', type=int, default=0, help='try fit to one sample')  # ?
@@ -367,9 +410,9 @@ if __name__ == '__main__':
     # KNN
     parser.add_argument('--K', type=int, nargs='+', default=4)  # ?
     parser.add_argument('--sm_normals_K', type=int, nargs='+', default=0)  # ?
-    parser.add_argument('--max_radius', type=float, nargs='+', default=1.5)  # is for chamfer as well!
-    parser.add_argument('--smooth_K', type=int, nargs='+', default=4)
-    parser.add_argument('--pc2_smooth', type=bool, nargs='+', default=False)
+    parser.add_argument('--max_radius', type=float, nargs='+', default=2.5)  # is for chamfer as well!
+
+    parser.add_argument('--pc2_smooth', type=int, nargs='+', default=0)
 
     # Chamfer
     parser.add_argument('--both_ways', type=bool, nargs='+', default=True)  # ?
@@ -384,29 +427,20 @@ if __name__ == '__main__':
     parser.add_argument('--early_patience', type=int, nargs='+', default=10, help='when to consider convergence') #?
     parser.add_argument('--early_min_delta', type=float, nargs='+', default=0.001, help='convergence difference') #?
 
-    # 'fov_up': fov_up,
-    # 'fov_down': fov_down,
-    # 'proj_H': proj_H,
-    # 'proj_W': proj_W,
-
-
-
-
+    # learning rate scoop for refinement - 0.2
 
 
     args = parser.parse_args()
+    # SEED
+    seed = seed_everything(seed=42)
 
-    # config
-    # different args for 8192 and full point cloud ...
-
-    # maybe in the class experiment?
-    # dataset, new_args = build_dataloader(args)
 
     argument_list = preprocess_args(args)
-    #
+
     for run in range(args.runs):
-    #
+
         for args in argument_list:  # drop this for now?
-    #
+
+            # print(args)
             Experiment = SceneFlowSolver(args)
             Experiment.optimize_sceneflow()

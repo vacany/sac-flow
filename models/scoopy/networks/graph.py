@@ -103,6 +103,7 @@ class Graph:
         size_batch, nb_points, _ = pcloud.shape
         assert size_batch == 1, "For construction of graph in chucks, the batch size should be 1, got %d." % size_batch
 
+
         # Find nearest neighbors
         #distance_matrix = -1 * torch.ones([nb_points, nb_points], dtype=torch.float32, device=pcloud.device)
         neighbors = -1 * torch.ones([nb_points, nb_neighbors], dtype=torch.int64, device=pcloud.device)
@@ -122,7 +123,7 @@ class Graph:
         #assert torch.all(distance_matrix >= 0), "Problem with distance matrix computation. Not all distances filled correctly."
 
         effective_nb_neighbors = neighbors.shape[-1]
-        edge_feats = torch.empty(0)
+        edge_feats = torch.empty(0, device=pcloud.device)
 
         neighbors = neighbors.view(-1)
 
