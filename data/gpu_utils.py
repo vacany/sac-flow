@@ -90,3 +90,11 @@ def print_gpu_memory(device=None):
         max_memory = torch.cuda.mem_get_info(device=device)[1] / 1024 / 1024
         memory_consumed = max_memory - free_memory
         print(f"Memory consumption: {memory_consumed:.0f} MB")
+
+def wait_for_gpu(time_to_wait=20):
+    print(get_free_gpu_indices())
+    while len(get_free_gpu_indices()) == 0:
+        print('waiting for gpu')
+        time.sleep(time_to_wait)
+
+    return get_free_gpu_indices()[0]

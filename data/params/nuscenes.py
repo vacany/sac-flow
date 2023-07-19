@@ -43,4 +43,4 @@ def frame_preprocess(pc1, pc2, gt_flow):
     # pc2 = pc2[pc2[:, 2] < z_max]
 
 
-    return pc1, pc2, gt_flow
+    return pc1, pc2, gt_flow, pc2.copy()

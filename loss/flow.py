@@ -392,12 +392,13 @@ class SmoothnessLoss(torch.nn.Module):
 
 class VAChamferLoss(torch.nn.Module):
 
-    def __init__(self, pc2, fov_up, fov_down, H, W, max_range, nn_weight=1, max_radius=2, both_ways=False, free_weight=0, margin=0.001, ch_normals_K=0, **kwargs):
+    def __init__(self, pc2, fov_up, fov_down, H, W, max_range, pc_scene=None, nn_weight=1, max_radius=2, both_ways=False, free_weight=0, margin=0.001, ch_normals_K=0, **kwargs):
         super().__init__()
         self.kwargs = kwargs
         self.pc2 = pc2
+        self.pc_scene = pc_scene if pc_scene is not None else pc2
 
-        self.Visibility = VisibilityScene(dataset=self.kwargs['dataset'], pc_scene=pc2[0])
+        self.Visibility = VisibilityScene(dataset=self.kwargs['dataset'], pc_scene=pc_scene[0])
 
         # import matplotlib.pyplot as plt
         # plt.imshow(self.Visibility.depth_image.flip(0).detach().cpu().numpy())
@@ -495,6 +496,7 @@ class VAChamferLoss(torch.nn.Module):
         compared_depth = pc2_image_depth - flow_depth
 
 
+
         # if flow point before the visible point from pc2, then it is in freespace
         # margin is just little number to not push points already close to visible point
         flow_in_freespace = compared_depth > 0 + self.margin
@@ -522,8 +524,12 @@ class LossModule(torch.nn.Module):
             pass
 
     def update(self, pc1, pc2):
+        if hasattr(self, 'pc_scene'):
+            self.VAChamfer_loss = VAChamferLoss(pc2=pc2, pc_scene=self.pc_scene, **self.kwargs)
+        else:
+            self.VAChamfer_loss = VAChamferLoss(pc2=pc2, **self.kwargs)
 
-        self.VAChamfer_loss = VAChamferLoss(pc2, **self.kwargs)
+
         self.Smoothness_loss = SmoothnessLoss(pc1, pc2, **self.kwargs)
 
     def forward(self, pc1, est_flow, pc2):

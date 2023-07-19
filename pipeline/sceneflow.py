@@ -99,6 +99,7 @@ def solver(
         net: nn.Module,
         Loss_Function: LossModule,
         args: argparse.Namespace,
+
 ):
 
     timers = Timers()
@@ -266,11 +267,12 @@ class SceneFlowSolver():
 
         for batch_id, data in tqdm(enumerate(self.dataloader)):
 
-            pc1, pc2, gt_flow = data
+            pc1, pc2, gt_flow, pc_scene = data
 
             pc1 = pc1.to(self.device)
             pc2 = pc2.to(self.device)
             gt_flow = gt_flow.to(self.device)
+            pc_scene = pc_scene.to(self.device)
 
             # JESUS!!!
             # # Benchmark area, nsf is not doing that, but still baseline exp is done consistently with others, nsf also perform worse here for some reason
@@ -286,6 +288,7 @@ class SceneFlowSolver():
                 self.model = self.model.eval()
 
             # update loss function
+            self.Loss_Function.pc_scene = pc_scene
 
             pred_dict = solver(pc1, pc2, gt_flow, self.model, self.Loss_Function, self.args)
 

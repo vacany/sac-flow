@@ -35,7 +35,7 @@ test_idx = [3, 7, 11, 19, 25, 26, 34, 37, 42, 43, 46, 51, 53, 55, 57, 59, 62, 63
 def frame_preprocess(pc1, pc2, gt_flow):
     y_min = -1.4
     z_max = 35
-
+    pc_scene = pc2.copy()
     # DATASET IS BIJECTIVE ...
 
     above_ground = np.logical_and(pc1[:, 1] > y_min, pc2[:, 1] > y_min)
@@ -45,14 +45,15 @@ def frame_preprocess(pc1, pc2, gt_flow):
     pc1 = pc1[above_ground & is_close]
     pc2 = pc2[above_ground & is_close]
 
-    # transform to lidar coordinates (SCOOP does inside already)
+    # transform to lidar coordinates (SCOOP inference does inside already)
     pc1 = pc1[:, [2, 0, 1]]
     pc2 = pc2[:, [2, 0, 1]]
+    pc_scene = pc_scene[:, [2, 0, 1]]
     gt_flow = gt_flow[:, [2, 0, 1]]
 
     # visualize_flow3d(pc1, pc2, gt_flow)
 
-    return pc1, pc2, gt_flow
+    return pc1, pc2, gt_flow, pc_scene
 
 # P = ['7.188560e+02 0.000000e+00 6.071928e+02 -3.372877e+02 0.000000e+00 7.188560e+02 1.852157e+02 2.369057e+00 0.000000e+00 0.000000e+00 1.000000e+00 4.915215e-03']
 
@@ -65,14 +66,14 @@ P_rect = torch.from_numpy(P_rect)
 # camera params not yet set!!!
 fov_up= 20  #
 fov_down = -20
-proj_H = 376
-proj_W = 1242  # maybe multiple by 4 for full fied of view?
+H = 376
+W = 1242  # maybe multiple by 4 for full fied of view?
 
 data_config = {'lidar_pose' : lidar_pose,
                'fov_up' : fov_up,
                'fov_down' : fov_down,
-               'proj_H' : proj_H,
-               'proj_W' : proj_W,
+               'H' : H,
+               'W' : W,
                'all_files' : all_files,
                'train_idx' : train_idx,
                'test_idx' : test_idx,

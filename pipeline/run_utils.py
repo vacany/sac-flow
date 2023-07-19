@@ -25,10 +25,14 @@ def run_experiment(cfg, DETACH=False):
     # if gpu not available, wait
 
     # Udelat convinient, s tim si clovek i ujasni, co chce. Delat ten process nazacatku v klidu dohromady
-    available_gpus = get_free_gpu_indices()
 
-    str_args.append(f'--gpu')
-    str_args.append(f'{available_gpus[0]}')
+
+    if hasattr(cfg, 'gpu'):
+        pass
+    # else:
+        # available_gpus = get_free_gpu_indices()
+        # str_args.append(f'--gpu')
+        # str_args.append(f'{available_gpus[0]}')
     # str_args.append(f' &')
 
     os.chdir(os.path.expanduser('~') + '/pcflow')
