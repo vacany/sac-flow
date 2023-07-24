@@ -5,14 +5,15 @@
 import glob
 import os
 import numpy as np
+from data.PATHS import DATA_PATH
 #                                                       t_x       t_y       t_z
 #  up_lidar  0.999996  0.000000  0.000000 -0.002848  1.350180  0.000000  1.640420
 #  down_lidar -0.000089 -0.994497  0.104767  0.000243  1.355162  0.000133  1.565252
 
 # not in lidar frame here!
 # ---> to shift to right coordinate system for pitch and yaw
+data_path = f'{DATA_PATH}/sceneflow/argoverse/'
 
-data_path = f'{os.path.expanduser("~")}/data/argoverse/'
 all_files = sorted(glob.glob(data_path + 'val/*/*.npz'))
 len_dataset = len(all_files)
 

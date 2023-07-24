@@ -2,9 +2,9 @@
 import glob
 import os
 import numpy as np
+from data.PATHS import DATA_PATH
 
-
-data_path = f'{os.path.expanduser("~")}/data/waymo/'
+data_path = f'{DATA_PATH}/sceneflow/waymo/'
 all_files = sorted(glob.glob(data_path + 'val/*/*.npz'))
 len_dataset = len(all_files)
 

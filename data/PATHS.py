@@ -16,7 +16,10 @@ elif server_name.startswith("boruvka"):
     EXP_PATH = f"{os.path.expanduser('~')}/experiments/"
 
     # todo, create bash structure
-
+elif server_name.startswith("login") or server_name.startswith('g'):
+    # KITTI_SF_PATH = f"{os.path.expanduser('~')}/data/"
+    TMP_VIS_PATH = f"{os.path.expanduser('~')}/pcflow/toy_samples/tmp_vis/"
+    EXP_PATH = f"{os.path.expanduser('~')}/experiments/"
 
 
 else:

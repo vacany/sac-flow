@@ -1,6 +1,7 @@
 from .kittisf import *
+from data.PATHS import DATA_PATH
 
-data_path = f'{os.path.expanduser("~")}/data/kittisf/'
+data_path = f'{DATA_PATH}/sceneflow/kittisf/'
 
 lidar_pose = (0,0,0)
 

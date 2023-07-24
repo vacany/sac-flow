@@ -2,13 +2,13 @@
 import os
 import glob
 import numpy as np
-import torch
+from data.PATHS import DATA_PATH
 # from vis.deprecated_vis import *
 
 # not in lidar frame here!
 # ---> to shift to right coordinate system for pitch and yaw
 
-data_path = f'{os.path.expanduser("~")}/data/kittisf/'
+data_path = f'{DATA_PATH}/sceneflow/kittisf/'
 
 lidar_pose = (0,0,0)
 
@@ -58,9 +58,9 @@ def frame_preprocess(pc1, pc2, gt_flow):
 # P = ['7.188560e+02 0.000000e+00 6.071928e+02 -3.372877e+02 0.000000e+00 7.188560e+02 1.852157e+02 2.369057e+00 0.000000e+00 0.000000e+00 1.000000e+00 4.915215e-03']
 
 # P = ['7.188560e+02 0.000000e+00 6.071928e+02 4.538225e+01 0.000000e+00 7.188560e+02 1.852157e+02 -1.130887e-01 0.000000e+00 0.000000e+00 1.000000e+00 3.779761e-03']
-P = ['7.215377e+02 0.000000e+00 6.095593e+02 4.485728e+01 0.000000e+00 7.215377e+02 1.728540e+02 2.163791e-01 0.000000e+00 0.000000e+00 1.000000e+00 2.745884e-03']
-P_rect = np.array([float(i) for i in P[0].split(' ')]).reshape(3,4)
-P_rect = torch.from_numpy(P_rect)
+# P = ['7.215377e+02 0.000000e+00 6.095593e+02 4.485728e+01 0.000000e+00 7.215377e+02 1.728540e+02 2.163791e-01 0.000000e+00 0.000000e+00 1.000000e+00 2.745884e-03']
+# P_rect = np.array([float(i) for i in P[0].split(' ')]).reshape(3,4)
+# P_rect = torch.from_numpy(P_rect)
 
 
 # camera params not yet set!!!
@@ -77,5 +77,5 @@ data_config = {'lidar_pose' : lidar_pose,
                'all_files' : all_files,
                'train_idx' : train_idx,
                'test_idx' : test_idx,
-               'P_rect' : P_rect,
+               # 'P_rect' : P_rect,
                }

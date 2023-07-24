@@ -319,7 +319,7 @@ def visualize_connected_points(pts1, pts2, title=None, savefig=None):
 if __name__ == "__main__":
     # tmp_folder = os.path.expanduser("~") + '/rci/data/tmp_vis/'
     # tmp_folder = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
-    tmp_folder = os.path.expanduser("~") + '/cmp/pcflow/toy_samples/tmp_vis/'
+    tmp_folder = os.path.expanduser("~") + '/rci/pcflow/toy_samples/tmp_vis/'
 
     # command = 'visualize_points3D'
     # print(getattr(sys.modules[__name__], command))
