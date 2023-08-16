@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # config_path = str(sys.argv[1])
 
-    config_path = f'{os.path.expanduser("~")}/pcflow/configs/experiments/grid_search.csv'
+    config_path = f'{os.path.expanduser("~")}/pcflow/configs/experiments/normals_0.csv'
     exps = pd.read_csv(config_path, index_col=False)
     exp_nbr = int(sys.argv[1])
     # gpu_mask = np.load(config_path + '.npy')
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     cfg = exps.iloc[exp_nbr].to_dict()
 
     # if socket.gethostname().startswith() == 'g':
-    cfg['gpu'] = 0
+    cfg['gpu'] = 0 # int(sys.argv[1]) boruvka
     cfg['exp_name'] = os.path.basename(config_path).split('.')[0] #+ f'_{exp_nbr}'  # separate datetime from main function?
 
     print(cfg)

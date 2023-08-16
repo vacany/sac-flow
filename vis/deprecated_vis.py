@@ -24,7 +24,9 @@ class FileWatcher():
             return True
 
 
+
 if socket.gethostname().startswith("Pat"):
+
     sys.path.append('/home/patrik/.local/lib/python3.8/site-packages')
     import pptk
 

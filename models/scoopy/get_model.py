@@ -6,6 +6,8 @@ from models.scoopy.utils.utils import iterate_in_chunks
 def build_scoop():
     # Load Checkpoint
     path_to_chkp = 'models/SCOOP/pretrained_models/kitti_v_100_examples/model_e400.tar'
+    # path_to_chkp = 'models/SCOOP/pretrained_models/ft3d_o_1800_examples/model_e100.tar'
+    print(path_to_chkp)
     file = torch.load(path_to_chkp, map_location='cpu')
 
     # Load parameters

@@ -108,6 +108,10 @@ def solver(
     pre_compute_st = time.time()
     solver_time = 0.
 
+    if hasattr(net, 'update'):
+        net = net.eval()
+        net.update(pc1, pc2)
+        net = net.train()
 
     if args.per_sample_init:
         net.apply(init_weights)
@@ -267,6 +271,7 @@ class SceneFlowSolver():
 
         for batch_id, data in tqdm(enumerate(self.dataloader)):
 
+
             pc1, pc2, gt_flow, pc_scene = data
 
             pc1 = pc1.to(self.device)
@@ -283,15 +288,15 @@ class SceneFlowSolver():
             # pc2 = pc2[:,radius_mask2[0]]
             # gt_flow = gt_flow[:,radius_mask[0]]
 
-            if hasattr(self.model, 'update'):
-                self.model.update(pc1, pc2)
-                self.model = self.model.eval()
+
+
+
 
             # update loss function
             self.Loss_Function.pc_scene = pc_scene
 
             pred_dict = solver(pc1, pc2, gt_flow, self.model, self.Loss_Function, self.args)
-
+            print('fuck')
 
             pred_flow = pred_dict['final_flow']
 
@@ -316,6 +321,7 @@ class SceneFlowSolver():
             if args.dev:
 
                 if args.vis:
+
                     from vis.deprecated_vis import visualize_flow3d
                     # visualize_flow3d(pc1[0].detach().cpu().numpy(), pc2[0].detach().cpu().numpy(), gt_flow[0].detach().cpu().numpy())
                     visualize_flow3d(pc1[0].detach().cpu().numpy(), pc2[0].detach().cpu().numpy(), pred_flow[0].detach().cpu().numpy())
@@ -426,7 +432,7 @@ if __name__ == '__main__':
 
     ### Hyperparameters
     parser.add_argument('--lr', type=float, nargs='+', default=0.008, help='learning rate') #?
-    parser.add_argument('--iters', type=int, nargs='+', default=5000, help='number of iterations')  # ?
+    parser.add_argument('--iters', type=int, nargs='+', default=250, help='number of iterations')  # ?
     parser.add_argument('--early_patience', type=int, nargs='+', default=10, help='when to consider convergence') #?
     parser.add_argument('--early_min_delta', type=float, nargs='+', default=0.001, help='convergence difference') #?
 
@@ -435,7 +441,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     # SEED
-    seed = seed_everything(seed=42)
+    # seed = seed_everything(seed=42)
 
 
     argument_list = preprocess_args(args)

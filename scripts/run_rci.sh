@@ -8,7 +8,7 @@
 #SBATCH --mem=12G
 #SBATCH --error=log/myJob.err            # standard error file
 #SBATCH --output=log/myJob.out           # standard output file
-#SBATCH --array 0-960%20
+#SBATCH --array 0-721%20
 
 ml PyTorch3D/0.7.3-foss-2022a-CUDA-11.7.0
 ml matplotlib/3.5.2-foss-2022a

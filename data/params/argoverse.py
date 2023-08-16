@@ -21,7 +21,8 @@ len_dataset = len(all_files)
 train_idx = []
 test_idx = [i for i in range(len_dataset) if i not in train_idx]
 
-
+# test_idx = [0,1,2,3]
+# print("Argoverse test_idx: ", test_idx)
 
 t_x1 = 1.350180
 t_x2 = 1.355162

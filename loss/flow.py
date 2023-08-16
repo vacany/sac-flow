@@ -341,7 +341,7 @@ class SmoothnessLoss(torch.nn.Module):
 
         _, forward_nn, _ = knn_points(pc1 + est_flow, pc2, lengths1=None, lengths2=None, K=1, norm=1)
 
-        a = est_flow[0] # magnitude
+        a = est_flow[0]
 
         ind = forward_nn[0] # more than one?
 
@@ -400,10 +400,6 @@ class VAChamferLoss(torch.nn.Module):
 
         self.Visibility = VisibilityScene(dataset=self.kwargs['dataset'], pc_scene=pc_scene[0])
 
-        # import matplotlib.pyplot as plt
-        # plt.imshow(self.Visibility.depth_image.flip(0).detach().cpu().numpy())
-        # plt.savefig('/home.dokt/vacekpa2/pcflow/toy_samples/tmp_vis/de.png')
-        # plt.close()
 
         # todo option of "pushing" points out of the freespace
         self.fov_up = fov_up
@@ -505,9 +501,10 @@ class VAChamferLoss(torch.nn.Module):
         # Indexing flow in freespace
         # freespace_mask = torch.zeros_like(chamf_x, dtype=torch.bool)[0]
         # freespace_mask = flow_in_freespace
+        # if repel:
+        freespace_loss = - est_flow[0, flow_in_freespace].norm(dim=-1).mean()
 
-        # only pc1 NN
-        freespace_loss = flow_in_freespace * chamf_x
+        # freespace_loss = flow_in_freespace * chamf_x
 
         return freespace_loss
 

@@ -11,7 +11,7 @@ if server_name.startswith("Pat"):
 # elif server_name.startswith('g') or server_name.startswith("login"):
 
 elif server_name.startswith("boruvka"):
-    KITTI_SF_PATH = f"{os.path.expanduser('~')}/data/kitti_sf/"
+    KITTI_SF_PATH = f"{os.path.expanduser('~')}/data/sceneflow/kitti_sf/"
     TMP_VIS_PATH = f"{os.path.expanduser('~')}/pcflow/toy_samples/tmp_vis/"
     EXP_PATH = f"{os.path.expanduser('~')}/experiments/"
 
