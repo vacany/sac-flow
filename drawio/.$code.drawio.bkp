@@ -1,10 +1,10 @@
-<mxfile host="Electron" modified="2023-05-06T20:14:52.025Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.2.8 Chrome/112.0.5615.165 Electron/24.2.0 Safari/537.36" etag="Hb6-q2Jj5Agsq_oHzkJ5" version="21.2.8" type="device">
+<mxfile host="Electron" modified="2023-08-17T12:03:11.062Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.8 Chrome/114.0.5735.289 Electron/25.5.0 Safari/537.36" etag="TVYC58CDzponohv9QRF2" version="21.6.8" type="device" pages="2">
   <diagram name="Page-1" id="DpgzWi51kZh1wFnS16hX">
-    <mxGraphModel dx="2217" dy="852" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2152" dy="811" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="iKD1I958HrvXLFb4CUBv-3" value="" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-3" value="" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="1620" y="600" width="680" height="480" as="geometry" />
         </mxCell>
         <mxCell id="03zKzZRUOzd0WJwNMWfv-7" value="" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -320,32 +320,64 @@
         <mxCell id="03zKzZRUOzd0WJwNMWfv-9" value="Dataloader" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="1650" y="80" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-1" value="3) Refiner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-1" value="3) Refiner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
           <mxGeometry x="1680" y="690" width="130" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-2" value="1) Universal save_data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-2" value="1) Universal save_data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
           <mxGeometry x="1860" y="690" width="130" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-4" value="Playground" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-4" value="Playground" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="1640" y="620" width="60" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-5" value="2) mlab vis - save_data&lt;br&gt;+ animation?,&lt;br&gt;NN visual" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-5" value="2) mlab vis - save_data&lt;br&gt;+ animation?,&lt;br&gt;NN visual" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
           <mxGeometry x="1860" y="795" width="130" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-6" value="4) loop chamfer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-6" value="4) loop chamfer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
           <mxGeometry x="2020" y="795" width="130" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-7" value="0) NN for both machines" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-7" value="0) NN for both machines" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
           <mxGeometry x="1680" y="795" width="130" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-8" value="7) Loop with pose and mos, weights" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-8" value="7) Loop with pose and mos, weights" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="2020" y="890" width="130" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-9" value="5) Normal to chamfer distance" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-9" value="5) Normal to chamfer distance" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="1680" y="890" width="130" height="70" as="geometry" />
         </mxCell>
-        <mxCell id="iKD1I958HrvXLFb4CUBv-10" value="6) smoothnes in NN for pc2 should be same&lt;br&gt;&quot;flow on NN in pc2 should be smooth&quot;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="iKD1I958HrvXLFb4CUBv-10" value="6) smoothnes in NN for pc2 should be same&lt;br&gt;&quot;flow on NN in pc2 should be smooth&quot;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="1860" y="890" width="130" height="70" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="MPP-x49yzGND_ERr7qSQ" name="Page-2">
+    <mxGraphModel dx="652" dy="400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="s8agbIod5duHK4wC40UU-1" value="- One image example&lt;br&gt;- store iterations along dev&lt;br&gt;- visualize by one, visualize iterations&lt;br&gt;- instance visuals&lt;br&gt;- class for experiment and examination" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="30" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="s8agbIod5duHK4wC40UU-2" value="Visuals" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s8agbIod5duHK4wC40UU-3" value="Freespace + Ego?" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="490" y="300" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s8agbIod5duHK4wC40UU-4" value="Experiments as settings" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="210" y="150" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s8agbIod5duHK4wC40UU-5" value="" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.polygon;polyCoords=[[0.25,0],[0.7,0.2],[0.9,0.4],[1,0.75],[0.75,1],[0.25,1],[0.1,0.7],[0,0.25]];polyline=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="310" y="330" width="100" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s8agbIod5duHK4wC40UU-9" value="Najdi pripady, kde to nastava po konvergenci a vyplot&amp;nbsp;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="300" y="280" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="s8agbIod5duHK4wC40UU-10" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="380" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="s8agbIod5duHK4wC40UU-8" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="380" y="390" width="10" height="10" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

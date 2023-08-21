@@ -1,6 +1,6 @@
-<mxfile host="Electron" modified="2023-06-16T07:32:52.105Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.4.0 Chrome/112.0.5615.204 Electron/24.5.1 Safari/537.36" etag="mKUc7XwUn9HqP-O11NZJ" version="21.4.0" type="device">
+<mxfile host="Electron" modified="2023-08-17T19:09:11.238Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.8 Chrome/114.0.5735.289 Electron/25.5.0 Safari/537.36" etag="4BR5DowrMqhkr0xErHqX" version="21.6.8" type="device">
   <diagram name="Page-1" id="MqwonNomDQyOSovYG0t7">
-    <mxGraphModel dx="2567" dy="1252" grid="1" gridSize="12" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" background="#ffffff" math="1" shadow="0">
+    <mxGraphModel dx="1648" dy="679" grid="1" gridSize="12" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="850" pageHeight="1100" background="#ffffff" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -330,10 +330,11 @@
             <mxPoint x="-512.5" y="410" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="SLUH4px_R7vLD78I38ar-14" value="$$\delta_{dyn}$$" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" parent="1" target="SLUH4px_R7vLD78I38ar-4" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
+        <mxCell id="SLUH4px_R7vLD78I38ar-14" value="$$\delta_{dyn}$$" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=1;entryDx=0;entryDy=0;labelBackgroundColor=default;" parent="1" target="SLUH4px_R7vLD78I38ar-4" edge="1">
+          <mxGeometry x="0.0002" width="50" height="50" relative="1" as="geometry">
             <mxPoint x="-510" y="410" as="sourcePoint" />
             <mxPoint x="-597" y="397" as="targetPoint" />
+            <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="SLUH4px_R7vLD78I38ar-15" value="$$ \hat{f} $$" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="SLUH4px_R7vLD78I38ar-5" target="SLUH4px_R7vLD78I38ar-4" edge="1">
@@ -343,7 +344,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="SLUH4px_R7vLD78I38ar-4" value="2" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
-          <mxGeometry x="-480" y="351.03" width="20" height="20" as="geometry" />
+          <mxGeometry x="-430" y="368.76" width="20" height="20" as="geometry" />
         </mxCell>
         <mxCell id="SLUH4px_R7vLD78I38ar-16" value="$$ \hat{f} = T_{12} + \delta_{dyn} $$" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" parent="1" vertex="1">
           <mxGeometry x="-880" y="211.19" width="210" height="70" as="geometry" />

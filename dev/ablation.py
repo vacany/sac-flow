@@ -188,8 +188,27 @@ if __name__ == '__main__':
     # visualize_points3D(our['pc1'], np.clip(base_error, 0, 1), bg_color=(1,1,1,0), show_grid=False, point_size=0.02, show_axis=False)
     # visualize_points3D(our['pc1'], np.clip(our_error, 0, 1), bg_color=(1,1,1,0), show_grid=False, point_size=0.02, show_axis=False)
 
-    generate_argoverse_images(178)
+    # generate_argoverse_images(178)
+    pc1 = np.random.rand(100,3)
+    s = np.arange(len(pc1))
+    error = np.random.randint(0, 20, size=(100,)) / 20
 
+    cmap = 'jet'
+    vmin = 0
+    vmax = np.inf
+    fig = 1
+
+    color_mapping = matplotlib.cm.get_cmap(cmap)
+    # vmax = 2
+    lut = (color_mapping(np.clip(error, vmin, vmax)) * 255).astype(np.uint8)
+
+    figure = mlab.figure(fig, bgcolor=(1, 1, 1), size=(1024, 1024))
+    # Plot the points, update its lookup table
+    p3d = mlab.points3d(pc1[:, 0], pc1[:, 1], pc1[:, 2], s, scale_mode='none', scale_factor=0.1,
+                        mode='sphere', colormap='jet')
+    p3d.module_manager.scalar_lut_manager.lut.number_of_colors = len(s)
+    p3d.module_manager.scalar_lut_manager.lut.table = lut
+    mlab.show()
     # normals_file = np.load('/home/patrik/rci/pcflow/normals.npz', allow_pickle=True)
     # pc1 = normals_file['pc']
     # normal = normals_file['normals_K3']
