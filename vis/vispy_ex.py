@@ -21,9 +21,9 @@ frame = 162  # 19 ICP failed
 # data = np.load(f'/home/patrik/rci/pretrained_models/kitti_v_100_examples/pc_res/{frame:06d}_res..npz', allow_pickle=True)
 # our_data = np.load(f'/home/patrik/rci/experiments/scoop_vis_smooth/pc_res/{frame:06d}_res.npz', allow_pickle=True)
 
-data = np.load(f'/home/patrik/rci/experiments/scoop_vis_smooth/pc_res/{frame:06d}_res.npz', allow_pickle=True)
+data = np.load(f'/home/patrik/rci/experiments/first_results/scoop_vis_smooth/pc_res/{frame:06d}_res.npz', allow_pickle=True)
 
-metric = np.load(f"/home/patrik/rci/experiments/scoop_vis_smooth/metrics_results.npz", allow_pickle=True)
+metric = np.load(f"/home/patrik/rci/experiments/first_results/scoop_vis_smooth/metrics_results.npz", allow_pickle=True)
 
 
 

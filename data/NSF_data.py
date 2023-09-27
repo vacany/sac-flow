@@ -37,11 +37,11 @@ class NSF_dataset():
         pc2 = data['pc2']
         gt_flow = data['flow']
 
-        pc1, pc2, gt_flow, pc_scene = self.preprocess_func(pc1, pc2, gt_flow)
+        pc1, pc2, gt_flow = self.preprocess_func(pc1, pc2, gt_flow)
 
         pc1 = torch.from_numpy(pc1).unsqueeze(0).to(torch.float32)
         pc2 = torch.from_numpy(pc2).unsqueeze(0).to(torch.float32)
-        pc_scene = torch.from_numpy(pc_scene).unsqueeze(0).to(torch.float32)
+        # pc_scene = torch.from_numpy(pc_scene).unsqueeze(0).to(torch.float32)
 
         pc1 = pc1 - self.lidar_pose
         pc2 = pc2 - self.lidar_pose
@@ -50,7 +50,9 @@ class NSF_dataset():
 
         self.idx += 1
 
-        return pc1, pc2, gt_flow, pc_scene
+        data_dict = {'pc1': pc1, 'pc2': pc2, 'gt_flow': gt_flow}
+        # return pc1, pc2, gt_flow, pc_scene
+        return data_dict
 
 
     def __len__(self):

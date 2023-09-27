@@ -9,7 +9,7 @@ from pipeline.run_utils import run_experiment
 
 if __name__ == "__main__":
 
-    print("Be sure to run this with nohup &")
+    print("ONLY ON CMP GRID!!!!! \nBe sure to run this with nohup &")
 
     config_path = str(sys.argv[1])
 

@@ -53,7 +53,7 @@ def frame_preprocess(pc1, pc2, gt_flow):
 
     # visualize_flow3d(pc1, pc2, gt_flow)
 
-    return pc1, pc2, gt_flow, pc_scene
+    return pc1, pc2, gt_flow#, pc_scene
 
 # P = ['7.188560e+02 0.000000e+00 6.071928e+02 -3.372877e+02 0.000000e+00 7.188560e+02 1.852157e+02 2.369057e+00 0.000000e+00 0.000000e+00 1.000000e+00 4.915215e-03']
 

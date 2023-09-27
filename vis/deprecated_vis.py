@@ -9,8 +9,6 @@ import socket
 import time
 
 
-
-
 class FileWatcher():
 
     def __init__(self, file_path):
@@ -150,7 +148,7 @@ if socket.gethostname().startswith("Pat"):
 
         all_rays = np.concatenate(all_rays)
 
-        visualize_multiple_pcls(*[pts1, all_rays, pts2], point_size=0.02, lookat=[0,0,0])
+        visualize_multiple_pcls(*[pts1, all_rays, pts2], point_size=0.02, show_grid=False, lookat=[0,0,0])
 
     def visualizer_transform(p_i, p_j, trans_mat):
         '''
@@ -213,7 +211,8 @@ else:
 
         command = 'visualize_multiple_pcls'
 
-        pcs = [a.detach().cpu().numpy() for a in args if type(a) is not np.ndarray]
+        # pcs = [a.detach().cpu().numpy() for a in args if type(a) is not np.ndarray]
+        pcs = [a for a in args]
 
         np.savez(folder_path + '/' + file, args=pcs, command=command, **kwargs)
 
@@ -356,6 +355,7 @@ if __name__ == "__main__":
 
                     if 'multiple' in command:
                         pcs = [data['args'][i] for i in range(len(data['args']))]
+                        # breakpoint()
                         visualize_multiple_pcls(*pcs)
                     else:
                         getattr(sys.modules[__name__], command)(**kwargs)

@@ -1,0 +1,61 @@
+<mxfile host="Electron" modified="2023-05-09T07:42:56.678Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.2.8 Chrome/112.0.5615.165 Electron/24.2.0 Safari/537.36" etag="applNWhLSTUIUcB4SpOg" version="21.2.8" type="device">
+  <diagram name="Page-1" id="YX-obPvYKGnBpHdb2SAj">
+    <mxGraphModel dx="679" dy="899" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="p96Xit5GJ01VvUqJMb-v-2" target="p96Xit5GJ01VvUqJMb-v-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-2" value="Hypothesis" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="50" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="p96Xit5GJ01VvUqJMb-v-4" target="p96Xit5GJ01VvUqJMb-v-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-4" value="Expectation" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1035" y="50" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p96Xit5GJ01VvUqJMb-v-6" target="p96Xit5GJ01VvUqJMb-v-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-6" value="Variables, Parameters" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1195" y="50" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p96Xit5GJ01VvUqJMb-v-8" target="p96Xit5GJ01VvUqJMb-v-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-8" value="Outcomes" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1550" y="50" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-9" value="Finding" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="50" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-10" value="Name of exp, create separate drawio. store it (together with codes) in exp folder with image of drawio.&amp;nbsp;&lt;br&gt;&lt;br&gt;Start with exp drawio, sbatch script will also copy diagram, store files.&amp;nbsp;&lt;br&gt;&lt;br&gt;After run, you investigate, estabilish finding, write metrics, insert images&lt;br&gt;&lt;br&gt;You can iterate over exps and create images - unnecessary&lt;br&gt;&lt;br&gt;Create Template for that below&lt;br&gt;&lt;br&gt;create python init script? or bash alias command?" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1068" y="270" width="414" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-11" value="What will it do, where it will help" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1048" y="105" width="100" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-12" value="Static Variables" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1394.6299999999999" y="50" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-13" value="This should improve that because ..." style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="870" y="110" width="100" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-14" value="List of iterables and variable (args in bash scripts)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1210" y="105" width="100" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-15" value="List of static variable (datasets, default)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1409.63" y="110" width="100" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-16" value="metrics, inference, visuals" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1560" y="110" width="100" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="p96Xit5GJ01VvUqJMb-v-17" value="Evaluation of hypotheses" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="110" width="100" height="55" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

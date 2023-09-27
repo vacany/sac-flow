@@ -7,9 +7,9 @@ from pytorch3d.ops.knn import knn_points
 from pytorch3d.ops.points_normals import estimate_pointcloud_normals
 
 from data.range_image import VisibilityScene
-# import FastGeodis
+import FastGeodis
 
-from .visibility import KNN_visibility_solver, substitute_NN_by_mask, strip_KNN_with_vis
+# from .visibility import KNN_visibility_solver, substitute_NN_by_mask, strip_KNN_with_vis
 
 
 def chamfer_distance_loss(x, y, x_lengths=None, y_lengths=None, both_ways=False, normals_K=0, loss_norm=1):
@@ -398,7 +398,7 @@ class VAChamferLoss(torch.nn.Module):
         self.pc2 = pc2
         self.pc_scene = pc_scene if pc_scene is not None else pc2
 
-        self.Visibility = VisibilityScene(dataset=self.kwargs['dataset'], pc_scene=pc_scene[0])
+        # self.Visibility = VisibilityScene(dataset=self.kwargs['dataset'], pc_scene=pc_scene[0])
 
 
         # todo option of "pushing" points out of the freespace

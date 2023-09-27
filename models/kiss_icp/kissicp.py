@@ -1,8 +1,8 @@
-
 import numpy as np
 import glob
 
 from kiss_icp.pipeline import OdometryPipeline
+import os
 
 class Dataset():
     def __init__(self, data_dir, scan_list):
@@ -34,31 +34,35 @@ def transform_pc(pts, pose):
 
     return transformed_pts
 
+def apply_kiss_icp(scan_list):
 
-if __name__ == "__main__":
+    if len(scan_list) < 10:
+        print('Too few scans for KISS-ICP, it requires more based on issues.')
     pose_list = []
-
-    data = np.load('./000162_res.npz')
-    pc1 = data['pc1'][:, [0, 2, 1]]
-    pc2 = data['pc2'][:, [0, 2, 1]]
-
     # Should be float
-    scan_list = [pc1.astype('float'), pc2.astype('float')]
+    for idx, scan in enumerate(scan_list):
+        scan_list[idx] = scan.astype('float')
 
     dataset = Dataset('../../dev', scan_list=scan_list)
-    kiss_model = OdometryPipeline(dataset=dataset, config='./test_icp.yaml')
+    # breakpoint()
+    config_file = os.path.expanduser("~") + '/pcflow/models/kiss_icp/test_icp.yaml'
+
+    kiss_model = OdometryPipeline(dataset=dataset, config=config_file)
+
     kiss_model.run()
 
     pose_list.append(np.stack(kiss_model.poses))
 
     pose = pose_list[0][1]
 
-    for idx, pose in enumerate(pose_list[0]):
-        print(f'frame: {idx} \n', pose)
+    # for idx, pose in enumerate(pose_list[0]):
+    #     print(f'frame: {idx} \n', pose)
 
+    global_pc_list = []
 
+    for idx, scan in enumerate(scan_list):
+        gl_pc2 = transform_pc(scan, pose)
+        global_pc_list.append(np.insert(gl_pc2, 3, idx, axis=1))
 
-    gl_pc2 = transform_pc(pc2, pose)
-
-    print('visualize in your interface to see result')
+    return global_pc_list, pose_list
 

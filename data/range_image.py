@@ -299,7 +299,7 @@ class VisibilityScene():
             self.W = 1242
 
 
-        elif dataset in ['argoverse', 'waymo', 'nuscenes']:
+        elif dataset in ['argoverse', 'waymo', 'nuscenes', 'valeo_emre']:
 
             datamodule = importlib.import_module('data.params.' + dataset)
             self.dataconfig = datamodule.data_config

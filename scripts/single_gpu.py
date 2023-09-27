@@ -6,14 +6,11 @@ import numpy as np
 import socket
 from pipeline.run_utils import run_experiment
 
-# rci job array, allocation will take time probably
-# split to rci and (later) cmp
-
 if __name__ == "__main__":
 
     # config_path = str(sys.argv[1])
 
-    config_path = f'{os.path.expanduser("~")}/pcflow/configs/experiments/normals_0.csv'
+    config_path = f'{os.path.expanduser("~")}/pcflow/configs/experiments/ours_nfs.csv'
     exps = pd.read_csv(config_path, index_col=False)
     exp_nbr = int(sys.argv[1])
     # gpu_mask = np.load(config_path + '.npy')
@@ -27,6 +24,11 @@ if __name__ == "__main__":
     # if socket.gethostname().startswith() == 'g':
     cfg['gpu'] = 0 # int(sys.argv[1]) boruvka
     cfg['exp_name'] = os.path.basename(config_path).split('.')[0] #+ f'_{exp_nbr}'  # separate datetime from main function?
+
+    ### FOR DEV
+    # cfg['dev'] = 1
+    # cfg['vis'] = 1
+    # cfg['iters'] = 5
 
     print(cfg)
 

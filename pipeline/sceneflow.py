@@ -272,31 +272,19 @@ class SceneFlowSolver():
         for batch_id, data in tqdm(enumerate(self.dataloader)):
 
 
-            pc1, pc2, gt_flow, pc_scene = data
+            pc1, pc2, gt_flow = data['pc1'], data['pc2'], data['gt_flow']
 
             pc1 = pc1.to(self.device)
             pc2 = pc2.to(self.device)
             gt_flow = gt_flow.to(self.device)
-            pc_scene = pc_scene.to(self.device)
-
-            # JESUS!!!
-            # # Benchmark area, nsf is not doing that, but still baseline exp is done consistently with others, nsf also perform worse here for some reason
-            # radius_mask = pc1.norm(dim=-1) < self.args.max_range
-            # radius_mask2 = pc2.norm(dim=-1) < self.args.max_range
-            #
-            # pc1 = pc1[:,radius_mask[0]]
-            # pc2 = pc2[:,radius_mask2[0]]
-            # gt_flow = gt_flow[:,radius_mask[0]]
-
-
-
+            # pc_scene = pc_scene.to(self.device)
 
 
             # update loss function
-            self.Loss_Function.pc_scene = pc_scene
+            # self.Loss_Function.pc_scene = pc_scene
 
             pred_dict = solver(pc1, pc2, gt_flow, self.model, self.Loss_Function, self.args)
-            print('fuck')
+
 
             pred_flow = pred_dict['final_flow']
 
@@ -327,9 +315,6 @@ class SceneFlowSolver():
                     visualize_flow3d(pc1[0].detach().cpu().numpy(), pc2[0].detach().cpu().numpy(), pred_flow[0].detach().cpu().numpy())
                 break   # for development
 
-
-
-
         self.store_exp()
 
     def store_inference(self, pc1, pc2, pred_flow, gt_flow, batch_id, store_dict):
@@ -356,7 +341,6 @@ class SceneFlowSolver():
 
         for metric_type in metric_types:
             if metric_type in ['loss_all', 'epe_all']: continue
-            # print(df[metric_type])
 
             final_metric[metric_type] = df[metric_type].mean()
 
@@ -436,14 +420,13 @@ if __name__ == '__main__':
     parser.add_argument('--early_patience', type=int, nargs='+', default=10, help='when to consider convergence') #?
     parser.add_argument('--early_min_delta', type=float, nargs='+', default=0.001, help='convergence difference') #?
 
-    # learning rate scoop for refinement - 0.2
+
+    # So I can test script without argparse in terminal interactively
 
 
     args = parser.parse_args()
     # SEED
     # seed = seed_everything(seed=42)
-
-
     argument_list = preprocess_args(args)
 
     for run in range(args.runs):

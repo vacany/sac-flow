@@ -1,0 +1,4 @@
+model,store_inference,sm_normals_K,forward_weight,pc2_smooth,K,smooth_weight,free_weight,VA,lr,dataset,max_radius,early_patience
+NeuralPrior,0,5,10,1,4,1,0,0,0.008,argoverse,2,50
+NeuralPrior,0,5,10,1,4,1,0,0,0.008,nuscenes,2,30
+NeuralPrior,0,5,10,1,4,1,0,0,0.008,waymo,2,50
