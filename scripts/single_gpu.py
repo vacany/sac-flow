@@ -7,10 +7,8 @@ import socket
 from pipeline.run_utils import run_experiment
 
 if __name__ == "__main__":
+    config_path = f'{os.path.expanduser("~")}/pcflow/configs/experiments/ours_nfs.csv'  # Rewrite this to change model etc.
 
-    # config_path = str(sys.argv[1])
-
-    config_path = f'{os.path.expanduser("~")}/pcflow/configs/experiments/ours_nfs.csv'
     exps = pd.read_csv(config_path, index_col=False)
     exp_nbr = int(sys.argv[1])
     # gpu_mask = np.load(config_path + '.npy')

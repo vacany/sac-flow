@@ -1,0 +1,3 @@
+model,store_inference,sm_normals_K,forward_weight,pc2_smooth,K,smooth_weight,free_weight,VA,lr,dataset,max_radius,early_patience
+SCOOP,0,0,0,0,32,10,0,0,0.2,kitti_t,20,150
+SCOOP,0,0,0,0,32,10,0,0,0.2,kitti_o,20,150

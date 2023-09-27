@@ -23,5 +23,7 @@ elif server_name.startswith("login") or server_name.startswith('g'):
 
 
 else:
-    raise NotImplementedError(f"Server {server_name} not recognized")
+    TMP_VIS_PATH = f"{os.path.expanduser('~')}/pcflow/toy_samples/tmp_vis/"
+    EXP_PATH = f"{os.path.expanduser('~')}/experiments/"
+    # raise NotImplementedError(f"Server {server_name} not recognized")
 

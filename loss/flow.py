@@ -7,7 +7,10 @@ from pytorch3d.ops.knn import knn_points
 from pytorch3d.ops.points_normals import estimate_pointcloud_normals
 
 from data.range_image import VisibilityScene
-import FastGeodis
+try:
+    import FastGeodis
+except:
+    print("FastGeodis not found, will not use it. This is not error, just future work")
 
 # from .visibility import KNN_visibility_solver, substitute_NN_by_mask, strip_KNN_with_vis
 

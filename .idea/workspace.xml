@@ -17,9 +17,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="editable-svg" />
         <option value="xml" />
         <option value="Jupyter Notebook" />
+        <option value="editable-svg" />
         <option value="Python Script" />
       </list>
     </option>
@@ -44,6 +44,9 @@
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
   </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 1
+}</component>
   <component name="ProjectId" id="2NxHFzVGu4wkG8ghx9OhHwFx1eP" />
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
@@ -54,16 +57,21 @@
     <option name="showLibraryContents" value="true" />
     <option name="showMembers" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;database.data.extractors.current.export.id&quot;: &quot;Comma-separated (CSV)_id&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/patrik/pcflow/paper/img&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "true",
+    "WebServerToolWindowPanel.toolwindow.highlight.mappings": "true",
+    "WebServerToolWindowPanel.toolwindow.highlight.symlinks": "true",
+    "WebServerToolWindowPanel.toolwindow.show.date": "false",
+    "WebServerToolWindowPanel.toolwindow.show.permissions": "false",
+    "WebServerToolWindowPanel.toolwindow.show.size": "false",
+    "database.data.extractors.current.export.id": "Comma-separated (CSV)_id",
+    "last_opened_file_path": "/home/patrik/pcflow/paper/img",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/data" />
@@ -73,11 +81,11 @@
       <recent name="$PROJECT_DIR$/models/SCOOP/scripts" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/dev" />
       <recent name="$PROJECT_DIR$/data" />
       <recent name="$PROJECT_DIR$/notebooks" />
       <recent name="$PROJECT_DIR$/paper/schemes" />
       <recent name="$PROJECT_DIR$/data/params" />
-      <recent name="$PROJECT_DIR$/loss" />
     </key>
   </component>
   <component name="RunManager" selected="Python.ablation">
@@ -338,6 +346,23 @@
       <workItem from="1692126133727" duration="989000" />
       <workItem from="1692170908133" duration="1323000" />
       <workItem from="1692269950374" duration="3281000" />
+      <workItem from="1692700238966" duration="5802000" />
+      <workItem from="1692778463349" duration="8557000" />
+      <workItem from="1692855736815" duration="5175000" />
+      <workItem from="1692869758430" duration="6833000" />
+      <workItem from="1692946367232" duration="5444000" />
+      <workItem from="1693210516174" duration="3546000" />
+      <workItem from="1693214075957" duration="11794000" />
+      <workItem from="1693229946509" duration="2695000" />
+      <workItem from="1693289638680" duration="8093000" />
+      <workItem from="1693810317339" duration="12818000" />
+      <workItem from="1693911475502" duration="8358000" />
+      <workItem from="1693932741453" duration="113000" />
+      <workItem from="1693993317349" duration="7969000" />
+      <workItem from="1694068731684" duration="991000" />
+      <workItem from="1694072913280" duration="657000" />
+      <workItem from="1695714240168" duration="599000" />
+      <workItem from="1695799950512" duration="10078000" />
     </task>
     <servers />
   </component>
@@ -348,6 +373,11 @@
           <url>notebook:///home/patrik/pcflow/notebooks/freespace.ipynb</url>
           <line>8</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="jupyter-line">
+          <url>notebook:///home/patrik/pcflow/dev/hw1.py.ipynb</url>
+          <line>1</line>
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
