@@ -45,5 +45,12 @@ and ours_scoop.csv and ours_nfs.csv for our method.
 
 ### Example of evaluation
 
-![alt text](dev/qualitative-argoverse.png "Overview")
+![alt text](dev/qualitative-argoverse.png "Example")
 
+### Results on KITTI-SF
+
+![alt text](dev/results_kitti.png "KITTISF results")
+
+### Results on LiDAR benchmarks
+
+![alt text](dev/results_lidar.png "LiDAR results")
