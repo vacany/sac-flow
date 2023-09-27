@@ -12,7 +12,7 @@ tar -xvf data_sceneflow.tgz $HOME/data/sceneflow
 
 ## Install dependencies
 
-- install [PyTorch3d](https://github.com/facebookresearch/pytorch3d) with CUDA support.
+- Install [PyTorch3d](https://github.com/facebookresearch/pytorch3d) with CUDA support.
 - Tested with:
   - Python 3.10.4
   - PyTorch 2.0.0 (CUDA-11.7.0)
@@ -39,4 +39,7 @@ the desired row experiment id (we included the different datasets in benchmarkin
 ```console
 python scripts/single_gpu $row
 ```
+
+where $row is the index of the experiment in the .csv file. We included base_scoop.csv and base_nfs.csv for baseline experiments
+and ours_scoop.csv and ours_nfs.csv for our method.
 
