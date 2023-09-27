@@ -43,3 +43,7 @@ python scripts/single_gpu $row
 where $row is the index of the experiment in the .csv file. We included base_scoop.csv and base_nfs.csv for baseline experiments
 and ours_scoop.csv and ours_nfs.csv for our method.
 
+### Example of evaluation
+
+![alt text](dev/qualitative-argoverse.png "Overview")
+
