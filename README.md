@@ -1,4 +1,4 @@
-# Self-supervised 3D Scene Flow via Surface-Aware Cyclic Smoothness (Under Review AAAI 2024)
+# Self-supervised 3D Scene Flow via Surface-Aware Cyclic Smoothness (Under Review CVPR 2024)
 
 ![alt text](dev/cyclic_smoothness.png "Overview")
 
