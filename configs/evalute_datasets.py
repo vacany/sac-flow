@@ -26,7 +26,7 @@ permutations1b = {'dataset_type': ['kitti_t', 'kitti_o'],
                     'forward_weight': [10],
                     'sm_normals_K': [4],
                     'early_patience': [0],
-                    'max_iters': [400],
+                    'max_iters': [150],
                     'runs': [1],
 
                     }

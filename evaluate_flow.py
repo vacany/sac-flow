@@ -9,6 +9,7 @@ from data.PATHS import EXP_PATH
 
 
 from models.NP import NeuralPriorNetwork
+from models.scoopy.get_model import PretrainedSCOOP
 
 from loss.flow import GeneralLoss
 
@@ -60,7 +61,6 @@ if __name__ == '__main__':
                 
             
             elif cfg['model'] == 'SCOOP':
-                from models.scoopy.get_model import PretrainedSCOOP
                 model = PretrainedSCOOP().to(device)
                 model.update(pc1, pc2)
 
