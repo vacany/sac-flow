@@ -1,5 +1,4 @@
 import os.path
-
 import numpy as np
 import torch
 import glob
@@ -7,6 +6,32 @@ import matplotlib.pyplot as plt
 import sys
 import socket
 import time
+
+from data.PATHS import VIS_PATH
+
+# try:
+def imshow(fig=None, path=None):
+    try:
+        from IPython.display import display, Image
+
+        if fig is not None:
+            URL = VIS_PATH + '/tmp.png'
+            # if hasattr(fig, 'shape'):
+            #     plt.imshow(fig)
+            #     plt.savefig(URL)
+            #     plt.close()
+            # else:
+            fig.savefig(URL)
+
+            display(Image(URL, width=2000))
+            os.remove(URL)
+        if path is not None:
+            display(Image(path))
+    except:
+        print('You do not have IPython installed!')
+        pass
+
+
 
 
 class FileWatcher():
@@ -85,6 +110,7 @@ if socket.gethostname().startswith("Pat"):
         v=visualize_points3D(p, l)
         v.set(**kwargs)
 
+
     def visualize_plane_with_points(points, n_vector, d):
 
         xx, yy = np.meshgrid(np.linspace(points[:,0].min(), points[:,0].max(), 100),
@@ -106,7 +132,7 @@ if socket.gethostname().startswith("Pat"):
         visualize_points3D(vis_pts, vis_pts[:,3])
 
 
-    def visualize_flow3d(pts1, pts2, frame_flow):
+    def visualize_flow3d(pts1, pts2, frame_flow, vis='pptk'):
         # flow from multiple pcl vis
         # valid_flow = frame_flow[:, 3] == 1
         # vis_flow = frame_flow[valid_flow]
@@ -135,20 +161,44 @@ if socket.gethostname().startswith("Pat"):
         vis_pts = pts1[dist_mask,:3]
         vis_flow = frame_flow[dist_mask]
 
-        # todo color for flow estimate
-        # for raycast
-        # vis_pts = pts1[valid_flow, :3]
-        # vis_pts = pts1[dist_mask, :3]
 
         all_rays = []
-        # breakpoint()
+
         for x in range(1, int(20)):
             ray_points = vis_pts + (vis_flow[:, :3]) * (x / int(20))
             all_rays.append(ray_points)
 
         all_rays = np.concatenate(all_rays)
 
-        visualize_multiple_pcls(*[pts1, all_rays, pts2], point_size=0.02, show_grid=False, lookat=[0,0,0])
+        visualize_multiple_pcls(*[pts1, all_rays, pts2], point_size=0.02, show_grid=False, lookat=[0,0,0], bg_color_top=[0,0,0,1])
+
+        def visualize_flow_frame(pc1, pc2, est_flow1, pose=None, pose2=None, normals1=None, normals2=None):
+
+            figure = mlab.figure(1, bgcolor=(1, 1, 1), size=(640, 480))
+            vis_pc1 = pc1.detach().cpu().numpy()
+            vis_pc2 = pc2.detach().cpu().numpy()
+
+            vis_est_rigid_flow = est_flow1.detach().cpu().numpy()
+
+            mlab.points3d(0, 0, 0, color=(0, 0, 1), scale_factor=0.3, mode='axes')
+            if pose2 is not None:
+                mlab.points3d(pose2.detach()[0, 0, -1], pose2.detach()[0, 1, -1], pose2.detach()[0, 2, -1],
+                              color=(1, 0, 0), scale_factor=0.3, mode='axes')
+            mlab.points3d(vis_pc1[0, :, 0], vis_pc1[0, :, 1], vis_pc1[0, :, 2], color=(0, 0, 1), scale_factor=0.1)
+            mlab.points3d(vis_pc2[0, :, 0], vis_pc2[0, :, 1], vis_pc2[0, :, 2], color=(1, 0, 0), scale_factor=0.1)
+            mlab.quiver3d(vis_pc1[0, :, 0], vis_pc1[0, :, 1], vis_pc1[0, :, 2], vis_est_rigid_flow[0, :, 0],
+                          vis_est_rigid_flow[0, :, 1], vis_est_rigid_flow[0, :, 2], color=(0, 1, 0), scale_factor=1)
+
+            if normals1 is not None:
+                vis_normals1 = normals1.detach().cpu().numpy()
+                mlab.quiver3d(vis_pc1[0, :, 0], vis_pc1[0, :, 1], vis_pc1[0, :, 2], vis_normals1[0, :, 0],
+                              vis_normals1[0, :, 1], vis_normals1[0, :, 2], color=(0, 0, 0.4), scale_factor=0.4)
+
+            if normals2 is not None:
+                vis_normals2 = normals2.detach().cpu().numpy()
+                mlab.quiver3d(vis_pc2[0, :, 0], vis_pc2[0, :, 1], vis_pc2[0, :, 2], vis_normals2[0, :, 0],
+                              vis_normals2[0, :, 1], vis_normals2[0, :, 2], color=(0.4, 0, 0), scale_factor=0.4)
+            mlab.show()
 
     def visualizer_transform(p_i, p_j, trans_mat):
         '''
@@ -204,7 +254,6 @@ else:
     def visualize_plane_with_points(points, n_vector, d):
         pass
     def visualize_multiple_pcls(*args, **kwargs):
-
 
         folder_path = os.path.expanduser("~") + '/pcflow/toy_samples/tmp_vis/'
         file = f'{time.time()}_cur.npz'

@@ -1,13 +1,19 @@
 import numpy as np
 import torch
+import os
 
 from models.scoopy.networks.scoop import SCOOP
 from models.scoopy.utils.utils import iterate_in_chunks
-def build_scoop():
+def build_scoop(dataset='kitti'):
     # Load Checkpoint
-    path_to_chkp = 'models/SCOOP/pretrained_models/kitti_v_100_examples/model_e400.tar'
-    # path_to_chkp = 'models/SCOOP/pretrained_models/ft3d_o_1800_examples/model_e100.tar'
-    print(path_to_chkp)
+    if dataset == 'kitti':
+        path_to_chkp = '/models/pretrained_models/scoop/kitti_v_100_examples/model_e400.tar'
+    if dataset == 'ft3d':
+        path_to_chkp = 'models/SCOOP/pretrained_models/ft3d_o_1800_examples/model_e100.tar'
+
+    # path_to_chkp = os.path.join(os.path.dirname(os.path.abspath(__file__)), '/../../', path_to_chkp)
+    path_to_chkp = '/home/vacekpa2/4D-RNSFP/' + path_to_chkp
+    # print(path_to_chkp)
     file = torch.load(path_to_chkp, map_location='cpu')
 
     # Load parameters
@@ -50,10 +56,13 @@ class PretrainedSCOOP(torch.nn.Module):
         self.est_flow = est_flow.clone()
         self.refinement = torch.nn.Parameter(torch.zeros(pc1.shape, dtype=torch.float32, device=pc1.device, requires_grad=True))
 
+        self.optimizer = torch.optim.Adam([self.refinement], lr=0.02)  # scoop lr is 0.02
 
-    def forward(self, pc1, pc2=None):
+    def forward(self, pc1, pc2=None, iters=150):
         # return self.est_flow
+
         return self.refinement + self.est_flow
+
     def compute_flow(self, pc_0, pc_1, nb_points_chunk=2048):
         # pc_0, pc_1 = batch["sequence"][0], batch["sequence"][1]
 

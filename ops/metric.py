@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-
+import pandas as pd
 
 def KNN_precision(indices_NN, instance_mask, include_first=False):
 
@@ -18,7 +18,7 @@ def KNN_precision(indices_NN, instance_mask, include_first=False):
 
     return Precision, at_least_one_incorrect
 
-# ANCHOR: metrics computation, follow NSFP metrics....
+
 def scene_flow_metrics(pred, labels):
     l2_norm = torch.sqrt(torch.sum((pred - labels) ** 2, 2)).cpu()  # Absolute distance error.
     labels_norm = torch.sqrt(torch.sum(labels * labels, 2)).cpu()
@@ -50,3 +50,50 @@ def scene_flow_metrics(pred, labels):
     angle_error = torch.acos(dot_product).mean().item()
 
     return EPE3D, acc3d_strict, acc3d_relax, outlier, angle_error
+
+class SceneFlowMetric():
+    def __init__(self):
+        self.epe_list = []
+        self.accs_list = []
+        self.accr_list = []
+        self.angle_list = []
+        self.outlier_list = []
+        self.time_list = []
+        self.metric_list = []
+
+    def update(self, data):
+        if data['gt_flow'].shape[-1] == 4:
+            gt_mask = data['gt_flow'][:, :, 3] > 0
+
+            self.epe, self.accs, self.accr, self.angle, self.outlier = scene_flow_metrics(data['pred_flow'][gt_mask].unsqueeze(0), data['gt_flow'][gt_mask][..., :3].unsqueeze(0))
+        else:
+            self.epe, self.accs, self.accr, self.angle, self.outlier = scene_flow_metrics(data['pred_flow'], data['gt_flow'][:,:,:3])
+
+        # update lists
+        self.epe_list.append(self.epe), self.accs_list.append(self.accs), self.accr_list.append(self.accr),
+        self.angle_list.append(self.angle), self.outlier_list.append(self.outlier), self.time_list.append(data['eval_time'])
+
+
+
+
+    def get_metric(self):
+
+        # Computation of sceneflow metrics
+        epe = np.stack(self.epe_list)
+        accs = np.stack(self.accs_list) * 100
+        accr = np.stack(self.accr_list) * 100
+        angle = np.stack(self.angle_list)
+        outlier = np.stack(self.outlier_list)
+        eval_time = np.stack(self.time_list)
+        # set pandas display options for float precision
+        pd.set_option("display.precision", 3)
+        metric_df = pd.DataFrame([epe, accs, accr, angle, outlier, eval_time], index=['EPE', 'AS', 'AR', 'Angle' , 'Out', 'Eval_Time']).T
+
+        self.metric_list.append(metric_df)
+
+        # as npz file?
+        return metric_df
+
+    def store_metric(self, path):
+        df = self.get_metric()
+        df.to_csv(path)

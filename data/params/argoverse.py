@@ -37,7 +37,7 @@ t_z2 = 1.565252
 t_z_mean = (t_z1 + t_z2) / 2
 
 lidar_pose = (t_x_mean, t_y_mean, t_z_mean)
-
+ground_origin = (0, 0, -t_z_mean)
 # glob.glob(root_dir + '/' + dataset_type + f'/{subfold}/*/*.npz')
 
 fov_up= 25
@@ -46,11 +46,19 @@ H = 64 #?
 W = 2048
 
 data_config = {'lidar_pose' : lidar_pose,
+               'ground_origin' : ground_origin,
                'fov_up' : fov_up,
                'fov_down' : fov_down,
                'H' : H,
                'W' : W,
                }
+
+def remap_keys(data_npz):
+
+    data_npz = dict(data_npz)
+    if 'flow' in data_npz.keys():
+        data_npz['gt_flow'] = data_npz['flow'].copy()
+    return data_npz
 
 def frame_preprocess(pc1, pc2, gt_flow):
     # These are already preprocessed

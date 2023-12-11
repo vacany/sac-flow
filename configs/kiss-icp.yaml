@@ -1,0 +1,16 @@
+out_dir: "tmp_icp_results"
+
+data:
+  deskew: False
+  preprocess: True # True
+  max_range: 35
+  min_range: 3.
+
+mapping:
+  voxel_size: 0.2
+  max_points_per_voxel: 20
+
+adaptive_threshold:
+  initial_threshold: 10.0
+  min_motion_th: 0.1
+#  fixed_threshold: 2.0 # <- optional, disables adaptive threshold

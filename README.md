@@ -1,56 +1,63 @@
-# Self-supervised 3D Scene Flow via Surface-Aware Cyclic Smoothness (Under Review CVPR 2024)
+# Regularizing Self-supervised 3D Scene Flows with Surface Awareness and Cyclic Consistency
 
-![alt text](dev/cyclic_smoothness.png "Overview")
+<p align="center">
+  <img src='docs/overview-merge.png'/>
+<p>
 
-## Download data
+<!-- # Results on StereoKITTI dataset  -->
+<!-- ![alt text](docs/overview.png) -->
 
-Download data [here](https://login.rci.cvut.cz/data/lidar_intensity/sceneflow/data_sceneflow.tgz), unpack it to the home folder (use symlink if necessary):
 
-```console
-tar -xvf data_sceneflow.tgz $HOME/data/sceneflow
-```
 
-## Install dependencies
-
+# Installation
+- Install [Fast Geodis](https://github.com/masadcv/FastGeodis) with pip install FastGeodis --no-build-isolation
 - Install [PyTorch3d](https://github.com/facebookresearch/pytorch3d) with CUDA support.
-- Tested with:
-  - Python 3.10.4
-  - PyTorch 2.0.0 (CUDA-11.7.0)
-  - PyTorch3D/0.7.3 (CUDA-11.7.0)
+<!-- - Install [PyTorch Scatter](https://github.com/rusty1s/pytorch_scatter/tree/master) with CUDA support. -->
+- Run commands in **install.sh** for installation of the packages above
 
-## Run experiments
-
-Go to the repository directory (we are assuming you installed the code in `$HOME/pcflow`):
+# DATA
+- Setup directory for extracting the data, visuals and experimental results
 ```console
-cd $HOME/pcflow
+BASE_PATH='path_where_to_store_data'
 ```
-
-and execute commands based on config files in
+- Download [Data](https://login.rci.cvut.cz/data/lidar_intensity/sceneflow/data_sceneflow.tgz) and unpack it to the folder **$BASE_PATH/data/sceneflow**:
 
 ```console
-$HOME/pcflow/configs/experiments/
+tar -xvf data_sceneflow.tgz $BASE_PATH/data/sceneflow
 ```
 
-### Neural Prior and SCOOP experiments
-
-change the config file on line 10 in 'scripts/single_gpu' to the desired experiment .csv file and run the command with
-the desired row experiment id (we included the different datasets in benchmarking on each row):
-
+# Run Experiments
+To run the method on all datasets with final metrics printed on **cuda:0**, just type:
 ```console
-python scripts/single_gpu $row
+for i in {0..6}; do python evaluate_flow.py $i; done
 ```
+where the argument sets the specific datasets according to the following table:
+| Dataset       | Argument Number | Model |
+|--------------|-----------|-----------|
+| KITTI t | 0 | Neural Prior|
+| StereoKITTI | 1 | Neural Prior |
+| KITTI  t | 2 | SCOOP |
+| StereoKITTI | 3 | SCOOP |
+| Argoverse | 4 | Neural Prior |
+| Nuscenes | 5 | Neural Prior |
+| Waymo | 6 | Neural Prior |
 
-where $row is the index of the experiment in the .csv file. We included base_scoop.csv and base_nfs.csv for baseline experiments
-and ours_scoop.csv and ours_nfs.csv for our method.
+# Experimental results on LiDAR Datasets
 
-### Example of error in evaluation
+<!-- <img style="float: ;" src="docs/table_lidar.png"> -->
 
-![alt text](dev/qualitative-argoverse.png "Example")
 
-### Results on KITTI-SF
+<p align="center">
+  <img src="docs/table_lidar.png" />
+</p>
 
-![alt text](dev/results_kitti.png "KITTISF results")
+# Experimental results on StereoKITTI Dataset
 
-### Results on LiDAR benchmarks
+<p align="center">
+  <img src="docs/table_kitti.png" />
+</p>
 
-![alt text](dev/results_lidar.png "LiDAR results")
+
+
+# Qualitative Example
+![alt text](docs/qualitative-argoverse.png)

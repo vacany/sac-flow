@@ -1,6 +1,103 @@
 import torch
 import torch.nn as nn
+from sklearn.cluster import DBSCAN
 from pytorch3d.ops.knn import knn_points
+from torch_scatter import scatter
+
+# todo iterative This is nice!
+# todo time in dbscan - extend dimension in voxel for time
+# todo cuml dbscan
+
+
+def center_rigidity_loss(pc1, flow, cluster_ids):
+    '''
+    For batch size of 1
+    :param pc1:
+    :param flow:
+    :param cluster_ids:
+    :return:
+    '''
+    pts_centers = scatter(pc1, cluster_ids, dim=1, reduce='mean')
+    flow_centers = scatter(pc1 + flow, cluster_ids, dim=1, reduce='mean')
+
+    pt_dist_to_center = (pc1 - pts_centers[0, cluster_ids[0]].unsqueeze(0))  # .norm(dim=-1, p=1)
+    flow_dist_to_center = ((pc1 + flow) - flow_centers[0, cluster_ids[0]].unsqueeze(0))  # .norm(dim=-1, p=1)
+
+    center_displacement = pt_dist_to_center - flow_dist_to_center
+
+    rigidity_loss = center_displacement.norm(dim=-1).mean()
+
+    return rigidity_loss
+
+
+# construct flow rays
+
+def construct_ray_flows(flow, max_magnitude=3, eps=0.15):
+    if max_magnitude == None:
+        max_magnitude = flow.norm(dim=-1).max()
+
+    else:
+        max_magnitude = torch.tensor(max_magnitude, device=flow.device)
+
+    in_between = torch.ceil(max_magnitude / eps).long()
+
+    ray_flow = flow.repeat(in_between, 1, 1)
+
+    indices = torch.arange(0, end=in_between, step=1, device=flow.device).unsqueeze(-1).unsqueeze(-1) / in_between
+    ray_flow_points = ray_flow * indices
+
+    return ray_flow_points
+
+
+def downsampled_clustering(deformed_pts, eps=0.15):
+    pc_to_downsample = deformed_pts.view(-1, 3)
+
+    cell_size = torch.tensor(eps, device=deformed_pts.device)
+
+    # this is fixed anyway
+    max_range = deformed_pts.view(-1, 3).max(dim=0)[0]
+    min_range = deformed_pts.view(-1, 3).min(dim=0)[0]
+
+    size = ((max_range - min_range) / cell_size).long() + 2
+    # origin_coors = (- min_range / cell_size).long()
+    voxel_grid = torch.zeros((size[0], size[1], size[2]), dtype=torch.long, device=pc_to_downsample.device)
+    index_grid = voxel_grid.clone()
+
+    grid_coors = ((pc_to_downsample - min_range) / cell_size).long()
+
+    voxel_grid[grid_coors[:, 0], grid_coors[:, 1], grid_coors[:, 2]] = 1
+
+    upsampled_pts = voxel_grid.nonzero()
+
+    upsample_ids = DBSCAN(eps=eps, min_samples=1).fit_predict((upsampled_pts * (eps - 0.01)).detach().cpu().numpy())
+
+    index_grid[upsampled_pts[:, 0], upsampled_pts[:, 1], upsampled_pts[:, 2]] = torch.from_numpy(upsample_ids).to(
+        index_grid.device).long()
+
+    upsampled_pts_ids = index_grid[grid_coors[:, 0], grid_coors[:, 1], grid_coors[:, 2]]
+
+    return upsampled_pts_ids
+
+
+def gather_flow_ids(pc_with_flow, flow, eps):
+    ray_flow_points = construct_ray_flows(flow, max_magnitude=3, eps=eps)
+    deformed_pts = ray_flow_points + pc_with_flow
+
+    deformed_ids = downsampled_clustering(deformed_pts, eps=eps)
+    flow_ids = deformed_ids.view(-1, flow.shape[1])[:1]  # to get back from shifting, bad practice, but works
+
+    return flow_ids
+
+
+def smooth_cluster_ids(flow, flow_ids):
+    # todo check it
+    if len(flow) != 1:
+        print('Batch Size not yet implemented!')
+    mean_id_flow = scatter(flow[:, :], flow_ids, dim=1, reduce='mean')
+    smooth_flow_loss = (flow[0, :] - mean_id_flow[0][flow_ids][0]).norm(dim=-1)
+
+    return smooth_flow_loss
+
 
 def fit_motion_svd_batch(pc1, pc2, mask=None):
     """

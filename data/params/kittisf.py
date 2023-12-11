@@ -30,7 +30,14 @@ test_idx = [3, 7, 11, 19, 25, 26, 34, 37, 42, 43, 46, 51, 53, 55, 57, 59, 62, 63
 # kitti_O is all of them
 # kittit
 
+def remap_keys(data_npz):
 
+    data_npz = dict(data_npz)
+    data_npz['gt_flow'] = data_npz['flow']
+    # id_mask1 = - np.ones(data_npz['pc1'].shape[0])
+    data_npz['id_mask1'] = data_npz['inst_pc1']
+
+    return data_npz
 # data preprocessing
 def frame_preprocess(pc1, pc2, gt_flow):
     y_min = -1.4

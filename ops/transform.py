@@ -1,5 +1,11 @@
 import numpy as np
 import torch
+from pytorch3d.transforms import (quaternion_to_axis_angle,
+                                  axis_angle_to_matrix,
+                                  matrix_to_quaternion,
+                                  euler_angles_to_matrix,
+                                  matrix_to_euler_angles)
+
 
 # global_pc1[:, :3] = (np.linalg.inv(pose) @ global_pc1.T).T[:, :3]
 
@@ -96,6 +102,93 @@ def NN_local(pc1, pc2, K=1):
     distances_nearest, nearest_indices = torch.topk(distances, k=K, largest=False)
 
     return distances_nearest, nearest_indices
+
+
+def xyz_axis_angle_to_matrix(xyz_axis_angle):
+    assert isinstance(xyz_axis_angle, torch.Tensor)
+    assert xyz_axis_angle.shape[-1] == 6
+
+    mat = torch.zeros(xyz_axis_angle.shape[:-1] + (4, 4), dtype=xyz_axis_angle.dtype, device=xyz_axis_angle.device)
+    mat[..., :3, :3] = axis_angle_to_matrix(xyz_axis_angle[..., 3:])
+    mat[..., :3, 3] = xyz_axis_angle[..., :3]
+    mat[..., 3, 3] = 1.
+    assert mat.shape == xyz_axis_angle.shape[:-1] + (4, 4)
+    # assert mat.shape[-2:] == (4, 4)
+    return mat
+
+
+def matrix_to_xyz_axis_angle(T):
+    assert isinstance(T, torch.Tensor)
+    assert T.dim() == 3
+    assert T.shape[1:] == (4, 4)
+    n_poses = len(T)
+    q = matrix_to_quaternion(T[:, :3, :3])
+    axis_angle = quaternion_to_axis_angle(q)
+    xyz = T[:, :3, 3]
+    poses = torch.concat([xyz, axis_angle], dim=1)
+    assert poses.shape == (n_poses, 6)
+    return poses
+
+
+def xyz_rpy_to_matrix(xyz_rpy):
+    assert isinstance(xyz_rpy, torch.Tensor)
+    assert xyz_rpy.shape[-1] == 6
+
+    mat = torch.zeros(xyz_rpy.shape[:-1] + (4, 4), dtype=xyz_rpy.dtype, device=xyz_rpy.device)
+    mat[..., :3, :3] = euler_angles_to_matrix(xyz_rpy[..., 3:], 'XYZ')
+    mat[..., :3, 3] = xyz_rpy[..., :3]
+    mat[..., 3, 3] = 1.
+    assert mat.shape == xyz_rpy.shape[:-1] + (4, 4)
+    # assert mat.shape[-2:] == (4, 4)
+    return mat
+
+
+def yaw_to_matrix(yaw):
+    assert isinstance(yaw, torch.Tensor)
+    assert yaw.shape[-1] == 1
+
+    mat = torch.zeros(yaw.shape[:-1] + (3, 3), dtype=yaw.dtype, device=yaw.device)
+    mat[..., 0, 0] = torch.cos(yaw).squeeze(-1)
+    mat[..., 0, 1] = -torch.sin(yaw).squeeze(-1)
+    mat[..., 1, 0] = torch.sin(yaw).squeeze(-1)
+    mat[..., 1, 1] = torch.cos(yaw).squeeze(-1)
+    mat[..., 2, 2] = 1.
+    assert mat.shape == yaw.shape[:-1] + (3, 3)
+    return mat
+
+
+def matrix_to_xyz_yaw(T):
+    assert isinstance(T, torch.Tensor)
+    assert T.shape[-2:] == (4, 4)
+    yaw = matrix_to_euler_angles(T[..., :3, :3], 'XYZ')[..., 2:]
+    xyz = T[..., :3, 3]
+    xyz_yaw = torch.concat([xyz, yaw], dim=-1)
+    assert xyz_yaw.shape[-1] == 4
+    return xyz_yaw
+
+
+def xyz_yaw_to_matrix(xyz_yaw):
+    assert isinstance(xyz_yaw, torch.Tensor)
+    assert xyz_yaw.shape[-1] == 4
+
+    mat = torch.zeros(xyz_yaw.shape[:-1] + (4, 4), dtype=xyz_yaw.dtype, device=xyz_yaw.device)
+    mat[..., :3, :3] = yaw_to_matrix(xyz_yaw[..., 3:])
+    mat[..., :3, 3] = xyz_yaw[..., :3]
+    mat[..., 3, 3] = 1.
+    assert mat.shape == xyz_yaw.shape[:-1] + (4, 4)
+    # assert mat.shape[-2:] == (4, 4)
+    return mat
+
+
+def matrix_to_xyz_rpy(T):
+    assert isinstance(T, torch.Tensor)
+    assert T.shape[-2:] == (4, 4)
+    rpy = matrix_to_euler_angles(T[..., :3, :3], 'XYZ')
+    xyz = T[..., :3, 3]
+    xyz_rpy = torch.concat([xyz, rpy], dim=-1)
+    assert xyz_rpy.shape[-1] == 6
+    return xyz_rpy
+
 
 if __name__ == "__main__":
 

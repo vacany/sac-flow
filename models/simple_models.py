@@ -115,3 +115,57 @@ class JointFlowInst(nn.Module):
         pred_flow = self.flow_model(flow_features)
 
         return mask, pred_flow
+
+
+def fit_flow():
+    ''' c_pc is center point cloud, calculate flow around it '''
+    forth_flow = torch.zeros(c_pc.shape, device=device, requires_grad=True)
+    back_flow = torch.zeros(c_pc.shape, device=device, requires_grad=True)
+    optimizer = torch.optim.Adam([forth_flow, back_flow], lr=0.008)
+    # Losses
+    SM_loss = SmoothnessLoss(pc1=c_pc, K=16, max_radius=1)
+    b_DT = DT(c_pc, b_pc)
+    f_DT = DT(c_pc, f_pc)
+    loss_list = []
+
+    # init dbscan - test against smoothness
+    init_clusters = DBSCAN(eps=eps, min_samples=1).fit_predict(c_pc[0, :, :2].detach().cpu().numpy())
+    # init_clusters = torch.from_numpy(init_clusters).to(device=pc1.device).long() + 1
+
+    My_metric = SceneFlowMetric()
+
+    last_loss = 100000
+    for e in range(max_flow_epoch):
+
+        # forth_dist, forth_nn, _ = knn_points(c_pc + forth_flow, f_pc, K=1, return_nn=True)
+        # back_dist, back_nn, _ = knn_points(c_pc + back_flow, b_pc, K=1, return_nn=True)
+        forth_dist, _ = f_DT.torch_bilinear_distance(c_pc + forth_flow)
+        back_dist, _ = b_DT.torch_bilinear_distance(c_pc + back_flow)
+
+        dist_loss = (forth_dist + back_dist).mean()
+        smooth_loss = SM_loss(c_pc, forth_flow, f_pc) + SM_loss(c_pc, back_flow, f_pc)
+        # smooth_loss = smooth_cluster_ids(forth_flow, init_clusters) + smooth_cluster_ids(back_flow, init_clusters)
+        time_smooth = (forth_flow - (-back_flow)).norm(dim=2, p=1).mean()  # maybe magnitude of flow?
+
+        loss = dist_loss + 0.5 * smooth_loss.mean() + time_smooth
+
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+
+        if verbose:
+            print(e, loss.item(), time_smooth.item())
+
+        if e >= early_patience:
+            if last_loss - loss < loss_diff_stop:
+                break
+            else:
+                last_loss = loss.item()
+
+        loss_list.append(loss.item())
+
+    # After flow
+    print("---------- After Flow -------------")
+    plain_NN_dist, _ = f_DT.torch_bilinear_distance(c_pc)  # must synchronized with pose
+    mos = np.logical_or((forth_flow[0].norm(dim=1, p=1) > motion_metric).detach().cpu().numpy(),
+                        plain_NN_dist.detach().cpu().numpy() > motion_metric)  # mask of static and dynamic

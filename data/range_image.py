@@ -315,6 +315,7 @@ class VisibilityScene():
             raise NotImplementedError
 
         self.depth_image = self.calculate_depth_image()
+
     def visibility_aware_smoothness_KNN(self, nn_ind):
 
 

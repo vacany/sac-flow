@@ -1,17 +1,8 @@
 #!/bin/bash -l
-#ml SciPy-bundle/2020.11-fosscuda-2020b
-#ml PyTorch/1.10.0-foss-2021a-CUDA-11.3.1
-#ml OpenCV/4.5.3-foss-2021a-CUDA-11.3.1-contrib
-#ml matplotlib/3.4.2-foss-2021a
 
-# nict installed over pip with from EMSANet github
 ml PyTorch3D/0.7.3-foss-2022a-CUDA-11.7.0
-#ml PyTorch/1.13.0-foss-2022a-CUDA-11.7.0
-#ml matplotlib
 ml matplotlib/3.5.2-foss-2022a
-#ml scikit-learn/1.1.2-foss-2022a
-#ml JupyterLab
 ml JupyterLab/3.5.0-GCCcore-11.3.0
-#ml OpenCV/4.7.0-foss-2022a-CUDA-11.7.0-contrib
+
 
 python "$@"

@@ -19,6 +19,7 @@ LIDAR_LOCAL_POSE = np.array([[-8.54212716e-01, -5.19923095e-01, -7.81823797e-04,
                              [ 0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  1.00000000e+00]])
 
 lidar_pose = (1.43, 0, 2.184)
+ground_origin = (0, 0, 0)
 
 
 fov_up= 2.4
@@ -27,12 +28,23 @@ H = 64 #?
 W = 2048
 
 data_config = {'lidar_pose' : lidar_pose,
+               'ground_origin' : ground_origin,
                'fov_up' : fov_up,
                'fov_down' : fov_down,
                'H' : H,
                'W' : W
                }
 
+def remap_keys(data_npz):
+
+    data_npz = dict(data_npz)
+    if 'flow' in data_npz.keys():
+        data_npz['gt_flow'] = data_npz['flow']
+    # data_npz['gt_flow'] = data_npz['flow']
+    # mos
+    # data_npz['mos1'] = (data_npz['id_mask1'] > 0) & (np.linalg.norm(data_npz['gt_flow'][:,:3], axis=1) > (0.5 / 10))
+
+    return data_npz
 
 
 def frame_preprocess(pc1, pc2, gt_flow):
