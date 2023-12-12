@@ -6,7 +6,7 @@ server_name = socket.gethostname()
 
 # Set up paths where you want to store data, visualize data, and store experiments
 if "BASE_PATH" in os.environ:
-    pass
+    BASE_PATH = os.environ['BASE_PATH']
 else:
     BASE_PATH = f"/mnt/personal/vacekpa2/" # <----- change this to your f
 
